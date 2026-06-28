@@ -13,14 +13,12 @@ function CreateDuelModal({ isOpen, onClose }) {
 
   const lobbyLink = duelId ? `${window.location.origin}/lobby/${duelId}` : ''
 
-  useEffect(() => {
-    if (!isOpen) {
-      setStep(1)
-      setPlayerCount(null)
-      setDuelId(null)
-      setCopied(false)
-    }
-  }, [isOpen])
+  if (!isOpen && (step !== 1 || playerCount || duelId || copied)) {
+    setStep(1)
+    setPlayerCount(null)
+    setDuelId(null)
+    setCopied(false)
+  }
 
   useEffect(() => {
     if (!isOpen) return

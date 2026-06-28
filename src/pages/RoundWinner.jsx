@@ -63,7 +63,7 @@ function RoundWinner() {
     winner, loser,
     winnerVotes, loserVotes,
     roundLabel,
-    bracket, trackHistory, allPlayers,
+    trackHistory, allPlayers,
   } = location.state || {}
 
   const [revealed, setRevealed] = useState(false)

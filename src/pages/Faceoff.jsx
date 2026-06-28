@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import SongSelection from '../components/SongSelection'
@@ -18,8 +18,8 @@ function Faceoff() {
   const roundLabel = location.state?.roundLabel || `Semifinal ${round}`
   const isFinal = location.state?.isFinal || false
 
-  const bracket = location.state?.bracket || buildBracket(players)
-  const trackHistory = location.state?.trackHistory || {}
+  const bracket = useMemo(() => location.state?.bracket || buildBracket(players), [location.state?.bracket, players])
+  const trackHistory = useMemo(() => location.state?.trackHistory || {}, [location.state?.trackHistory])
 
   const battler1 = location.state?.player1 || players[0]
   const battler2 = location.state?.player2 || players[1]

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import CountdownTimer from './CountdownTimer'
 import { SpotifyIcon, YouTubeIcon, AppleMusicIcon } from './PlatformIcons'
 import { fetchSpotifyTrack, fetchYouTubeTrack } from '../utils/api'
@@ -20,17 +20,18 @@ const PLATFORM_ICON = {
   youtube: { Icon: YouTubeIcon, color: '#FF0000' },
 }
 
-function SongSelection({ player, opponent, timeLeft, totalTime = 90, roundNum, onLockIn }) {
+function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, onLockIn }) {
   const [songLink, setSongLink] = useState('')
   const [trackInfo, setTrackInfo] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const debounceRef = useRef(null)
 
-  useEffect(() => {
+  const handleLinkChange = (value) => {
+    setSongLink(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
-    const trimmed = songLink.trim()
+    const trimmed = value.trim()
     const platform = detectPlatform(trimmed)
 
     if (!trimmed || !platform) {
@@ -54,9 +55,7 @@ function SongSelection({ player, opponent, timeLeft, totalTime = 90, roundNum, o
         setLoading(false)
       }
     }, 500)
-
-    return () => clearTimeout(debounceRef.current)
-  }, [songLink])
+  }
 
   const handleLockIn = () => {
     if (trackInfo && onLockIn) {
@@ -85,7 +84,7 @@ function SongSelection({ player, opponent, timeLeft, totalTime = 90, roundNum, o
         <input
           type="url"
           value={songLink}
-          onChange={(e) => setSongLink(e.target.value)}
+          onChange={(e) => handleLinkChange(e.target.value)}
           placeholder="Paste a Spotify, YouTube, or Apple Music link"
           className="w-full bg-card/60 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
         />

@@ -5,9 +5,9 @@ function JoinDuelModal({ isOpen, onClose }) {
   const navigate = useNavigate()
   const [code, setCode] = useState('')
 
-  useEffect(() => {
-    if (!isOpen) setCode('')
-  }, [isOpen])
+  if (!isOpen && code) {
+    setCode('')
+  }
 
   useEffect(() => {
     if (!isOpen) return

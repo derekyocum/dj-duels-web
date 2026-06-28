@@ -64,7 +64,7 @@ function Lobby() {
         roundLabel: 'Semifinal 1',
       },
     })
-  }, [navigate, duelId, players])
+  }, [navigate, duelId, players, settings])
 
   useEffect(() => {
     if (players.length >= maxPlayers) return

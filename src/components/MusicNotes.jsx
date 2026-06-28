@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const SYMBOLS = ['♪', '♫', '♬', '🎵', '🎶', '🎤', '🎧', '🎹', '🎸']
 const NEON_COLORS = ['#00d4ff', '#ff2d95', '#b347ff', '#39ff14', '#fff01f']
@@ -38,22 +38,22 @@ function MusicNotes() {
   const rafRef = useRef(null)
   const [glowLevels, setGlowLevels] = useState(() => new Array(NOTES.length).fill(0))
 
-  const updateGlow = useCallback(() => {
-    const { x, y } = mouseRef.current
-    const levels = noteRefs.current.map((el) => {
-      if (!el) return 0
-      const rect = el.getBoundingClientRect()
-      const cx = rect.left + rect.width / 2
-      const cy = rect.top + rect.height / 2
-      const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2)
-      if (dist > GLOW_RADIUS) return 0
-      return 1 - dist / GLOW_RADIUS
-    })
-    setGlowLevels(levels)
-    rafRef.current = requestAnimationFrame(updateGlow)
-  }, [])
-
   useEffect(() => {
+    function updateGlow() {
+      const { x, y } = mouseRef.current
+      const levels = noteRefs.current.map((el) => {
+        if (!el) return 0
+        const rect = el.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        if (dist > GLOW_RADIUS) return 0
+        return 1 - dist / GLOW_RADIUS
+      })
+      setGlowLevels(levels)
+      rafRef.current = requestAnimationFrame(updateGlow)
+    }
+
     const handleMouseMove = (e) => {
       mouseRef.current = { x: e.clientX, y: e.clientY }
     }
@@ -70,7 +70,7 @@ function MusicNotes() {
       document.removeEventListener('mouseleave', handleMouseLeave)
       cancelAnimationFrame(rafRef.current)
     }
-  }, [updateGlow])
+  }, [])
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
