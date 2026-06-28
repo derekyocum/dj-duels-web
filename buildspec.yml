@@ -1,9 +1,6 @@
 version: 0.2
 
 phases:
-  install:
-    runtime-versions:
-      nodejs: 22
   pre_build:
     commands:
       - echo "Logging in to ECR..."
@@ -11,12 +8,9 @@ phases:
       - ECR_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/dj-duels-web
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)
-      - echo "Running lint..."
-      - npm ci
-      - npm run lint
   build:
     commands:
-      - echo "Building Docker image..."
+      - echo "Building and linting via Docker..."
       - docker build -t $ECR_URI:$IMAGE_TAG -t $ECR_URI:latest .
       - docker push $ECR_URI:$IMAGE_TAG
       - docker push $ECR_URI:latest
