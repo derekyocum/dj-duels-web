@@ -11,7 +11,7 @@ function CreateDuelModal({ isOpen, onClose }) {
   const [duelId, setDuelId] = useState(null)
   const [copied, setCopied] = useState(false)
 
-  const lobbyLink = duelId ? `${window.location.origin}/lobby/${duelId}` : ''
+  const lobbyLink = duelId && playerCount ? `${window.location.origin}/lobby/${duelId}?players=${playerCount}` : ''
 
   if (!isOpen && (step !== 1 || playerCount || duelId || copied)) {
     setStep(1)

@@ -1,25 +1,22 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import SongSelection from '../components/SongSelection'
 import SpectatorView from '../components/SpectatorView'
-import { DEMO_PLAYERS, DEMO_TRACKS, buildBracket } from '../utils/demoData'
+import { DEMO_PLAYERS } from '../utils/demoData'
+import { useAuth } from '../context/AuthContext'
+import { useGameSocket } from '../hooks/useGameSocket'
 
 function Faceoff() {
   const { duelId, roundNum } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const players = location.state?.players || DEMO_PLAYERS
-  const allPlayers = location.state?.allPlayers || players
   const settings = location.state?.settings || {}
   const totalTime = settings.timeLimit || 90
   const round = parseInt(roundNum, 10)
-  const roundLabel = location.state?.roundLabel || `Semifinal ${round}`
-  const isFinal = location.state?.isFinal || false
-
-  const bracket = useMemo(() => location.state?.bracket || buildBracket(players), [location.state?.bracket, players])
-  const trackHistory = useMemo(() => location.state?.trackHistory || {}, [location.state?.trackHistory])
 
   const battler1 = location.state?.player1 || players[0]
   const battler2 = location.state?.player2 || players[1]
@@ -36,32 +33,33 @@ function Faceoff() {
     return () => clearInterval(interval)
   }, [timeLeft])
 
-  const handleLockIn = useCallback((trackInfo) => {
-    setWaitingForOpponent(true)
-
-    const opponentTracks = DEMO_TRACKS[battler2.name]
-    const trackIndex = isFinal ? 1 : 0
-    const opponentTrack = opponentTracks?.[trackIndex] || opponentTracks?.[0] || {
-      id: 'demo', name: 'Mystery Track', artist: 'Unknown',
-      album: 'Unknown', albumArtUrl: null, source: 'spotify',
-    }
-
-    setTimeout(() => {
+  const handleGameEvent = useCallback((event) => {
+    if (event.type === 'BOTH_LOCKED_IN') {
+      const p = event.payload
       navigate(`/duel/${duelId}/round/${roundNum}/stage`, {
         state: {
-          player1: battler1,
-          player2: battler2,
-          track1: trackInfo,
-          track2: opponentTrack,
-          allPlayers,
-          bracket,
-          trackHistory,
-          roundLabel,
-          isFinal,
+          player1: p.player1,
+          player2: p.player2,
+          track1: p.track1,
+          track2: p.track2,
+          allPlayers: p.allPlayers,
+          bracket: p.bracket,
+          trackHistory: p.trackHistory,
+          roundLabel: p.roundLabel,
+          isFinal: p.isFinal,
         },
       })
-    }, 2500)
-  }, [navigate, duelId, roundNum, battler1, battler2, allPlayers, bracket, trackHistory, roundLabel, isFinal])
+    } else if (event.type === 'SESSION_EXPIRED' || event.type === 'SESSION_CLOSED') {
+      navigate('/')
+    }
+  }, [navigate, duelId, roundNum])
+
+  const { send } = useGameSocket(duelId, handleGameEvent)
+
+  const handleLockIn = useCallback((trackInfo) => {
+    setWaitingForOpponent(true)
+    send('round/lock-in', { duelId, username: user?.username, track: trackInfo })
+  }, [send, duelId, user?.username])
 
   return (
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">

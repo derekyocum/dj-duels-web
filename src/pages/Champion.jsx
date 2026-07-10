@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
+import { useGameSocket } from '../hooks/useGameSocket'
 
 const COLOR_BG = {
   'neon-blue': 'bg-neon-blue/20',
@@ -26,13 +27,22 @@ const COLOR_TEXT = {
   'neon-yellow': 'text-neon-yellow',
 }
 
+function formatTime(s) {
+  const clamped = Math.max(0, s)
+  return `${Math.floor(clamped / 60)}:${String(clamped % 60).padStart(2, '0')}`
+}
+
 function Champion() {
+  const { duelId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const { champion, trackHistory = {} } = location.state || {}
   const tracks = trackHistory[champion?.name] || []
 
   const [carouselIndex, setCarouselIndex] = useState(0)
+  const [closeAt, setCloseAt] = useState(null)
+  const [secondsLeft, setSecondsLeft] = useState(null)
+  const gameSentRef = useRef(false)
   const autoScrollRef = useRef(null)
 
   const color = champion?.color || 'neon-blue'
@@ -47,6 +57,33 @@ function Champion() {
     }, 4000)
     return () => clearInterval(autoScrollRef.current)
   }, [tracks.length])
+
+  const handleGameEvent = useCallback((event) => {
+    if (event.type === 'SESSION_CLOSING') {
+      setCloseAt(event.payload.closeAt)
+    } else if (event.type === 'SESSION_CLOSED' || event.type === 'SESSION_EXPIRED') {
+      navigate('/')
+    }
+  }, [navigate])
+
+  const { send, isConnected } = useGameSocket(duelId, handleGameEvent)
+
+  // Send game/end once when first connected
+  useEffect(() => {
+    if (isConnected && !gameSentRef.current) {
+      gameSentRef.current = true
+      send('game/end', { duelId })
+    }
+  }, [isConnected, send, duelId])
+
+  // Countdown tick driven by the closeAt timestamp from the server
+  useEffect(() => {
+    if (!closeAt) return
+    const tick = () => setSecondsLeft(Math.ceil((closeAt - Date.now()) / 1000))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [closeAt])
 
   return (
     <div className="relative min-h-svh flex flex-col overflow-x-hidden bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
@@ -66,6 +103,24 @@ function Champion() {
           </span>
         </a>
       </nav>
+
+      {/* Closing countdown banner */}
+      {closeAt && secondsLeft !== null && (
+        <div className="relative z-10 mx-6 mb-2">
+          <div className="bg-card/60 border border-text-muted/15 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4">
+            <p className="text-text-secondary text-xs">Lobby closes in</p>
+            <span className={`font-mono font-bold text-sm tabular-nums ${secondsLeft < 30 ? 'text-neon-pink' : 'text-text-primary'}`}>
+              {formatTime(secondsLeft)}
+            </span>
+            <div className="flex-1 h-1 bg-card rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${secondsLeft < 30 ? 'bg-neon-pink' : 'bg-neon-blue'}`}
+                style={{ width: `${Math.max(0, (secondsLeft / 180) * 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-8">
         <span className="text-5xl mb-4">👑</span>
