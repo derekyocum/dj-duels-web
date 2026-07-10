@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import { DEMO_TRACKS } from '../utils/demoData'
@@ -33,6 +33,12 @@ const COLOR_GLOW = {
   'neon-purple': 'shadow-[0_0_40px_rgba(179,71,255,0.25)]',
   'neon-green': 'shadow-[0_0_40px_rgba(57,255,20,0.25)]',
   'neon-yellow': 'shadow-[0_0_40px_rgba(255,240,31,0.25)]',
+}
+
+const TRACK_SECONDS = 90
+
+function formatTime(s) {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
 function formatDuration(ms) {
@@ -75,6 +81,8 @@ function Stage() {
     player1: { up: 0, down: 0 },
     player2: { up: 0, down: 0 },
   })
+  const [trackTimeLeft, setTrackTimeLeft] = useState(TRACK_SECONDS)
+  const [songStopped, setSongStopped] = useState(false)
 
   const tracks = [
     { track: track1, player: player1, key: 'player1' },
@@ -82,10 +90,35 @@ function Stage() {
   ]
   const current = tracks[currentTrackIndex]
 
+  // Intro → playing transition
   useEffect(() => {
     const timer = setTimeout(() => setPhase('playing'), 1500)
     return () => clearTimeout(timer)
   }, [])
+
+  // Countdown — one interval while playing, functional update avoids stale closure
+  useEffect(() => {
+    if (phase !== 'playing') return
+    const id = setInterval(() => setTrackTimeLeft((t) => (t > 0 ? t - 1 : 0)), 1000)
+    return () => clearInterval(id)
+  }, [phase])
+
+  // Ref so the auto-advance callback always calls the latest handleNext
+  const handleNextRef = useRef(null)
+
+  // Auto-advance when timer hits 0; defer setState into a timeout so it isn't synchronous in effect body
+  useEffect(() => {
+    if (trackTimeLeft > 0 || phase !== 'playing') return
+    const t = setTimeout(() => {
+      setSongStopped(true)
+      if (!vote) {
+        setVote('down')
+        setVotes((prev) => ({ ...prev, down: prev.down + 1 }))
+      }
+      setTimeout(() => handleNextRef.current?.(), 1500)
+    }, 0)
+    return () => clearTimeout(t)
+  }, [trackTimeLeft, phase, vote])
 
   function handleVote(direction) {
     if (vote) return
@@ -107,6 +140,8 @@ function Stage() {
       setCurrentTrackIndex((i) => i + 1)
       setVote(null)
       setVotes({ up: 0, down: 0 })
+      setTrackTimeLeft(TRACK_SECONDS)
+      setSongStopped(false)
       setPhase('intro')
       setTimeout(() => setPhase('playing'), 1500)
     } else {
@@ -188,11 +223,18 @@ function Stage() {
     }
   }
 
+  // Keep ref current after every render so the timer callback always calls latest
+  useEffect(() => { handleNextRef.current = handleNext })
+
   const color = current?.player?.color || 'neon-blue'
   const textClass = COLOR_TEXT[color] || COLOR_TEXT['neon-blue']
   const borderClass = COLOR_BORDER[color] || COLOR_BORDER['neon-blue']
   const glowClass = COLOR_GLOW[color] || COLOR_GLOW['neon-blue']
   const bgClass = COLOR_BG[color] || COLOR_BG['neon-blue']
+
+  const isSpotify = current?.track?.source === 'spotify' && !!current?.track?.id
+  const isYouTube = current?.track?.source === 'youtube' && !!current?.track?.videoId
+  const timerIsLow = trackTimeLeft < 10
 
   return (
     <div className="relative min-h-svh flex flex-col overflow-x-hidden bg-gradient-to-b from-[#050510] via-[#060614] to-[#050510]">
@@ -237,51 +279,75 @@ function Stage() {
             </div>
 
             <div className={`transition-all duration-700 w-full max-w-2xl mx-auto ${phase === 'intro' ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-              {current?.track?.source === 'youtube' && current?.track?.videoId ? (
+              {/* Player area */}
+              {songStopped ? (
+                <div className="w-full bg-card/60 border border-text-muted/15 rounded-2xl p-8 text-center mb-6">
+                  <span className="text-3xl block mb-2">⏱️</span>
+                  <p className={`${textClass} font-bold text-lg`}>Time's Up!</p>
+                  <p className="text-text-primary font-semibold mt-2">{current?.track?.name}</p>
+                  <p className="text-text-secondary text-sm">{current?.track?.artist}</p>
+                </div>
+              ) : isYouTube ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <iframe
-                    src={`https://www.youtube.com/embed/${current.track.videoId}?autoplay=1&end=300`}
+                    src={`https://www.youtube.com/embed/${current.track.videoId}?autoplay=1&enablejsapi=1&end=300`}
                     title={current.track.name}
                     className="w-full aspect-video"
                     allow="autoplay; encrypted-media"
                     allowFullScreen
                   />
                 </div>
-              ) : current?.track?.id ? (
-                <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6 max-w-3xl`}>
+              ) : isSpotify ? (
+                <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <iframe
                     src={`https://open.spotify.com/embed/track/${current.track.id}?theme=0&utm_source=generator`}
                     title={current.track.name}
-                    className="w-full h-[500px]"
+                    className="w-full h-[352px]"
                     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                     loading="lazy"
                   />
                 </div>
               ) : null}
 
-              <div className="text-center mb-8">
-                <h2 className={`${textClass} font-bold text-2xl md:text-3xl mb-1`}>{current?.track?.name}</h2>
-                <p className="text-text-secondary text-lg">{current?.track?.artist}</p>
-                <div className="flex items-center justify-center gap-3 mt-2">
-                  {current?.track?.source === 'youtube' ? (
-                    <p className="text-text-muted text-sm">5:00 limit</p>
-                  ) : (
-                    <>
-                      <p className="text-text-muted text-sm">{current?.track?.album}</p>
-                      {current?.track?.durationMs && (
-                        <>
-                          <span className="text-text-muted/30">·</span>
-                          <span className="text-text-muted text-sm">{formatDuration(current.track.durationMs)}</span>
-                        </>
-                      )}
-                    </>
-                  )}
+              {/* Track info — shown for YouTube and no-embed; Spotify embed renders its own */}
+              {!isSpotify && (
+                <div className="text-center mb-8">
+                  <h2 className={`${textClass} font-bold text-2xl md:text-3xl mb-1`}>{current?.track?.name}</h2>
+                  <p className="text-text-secondary text-lg">{current?.track?.artist}</p>
+                  <div className="flex items-center justify-center gap-3 mt-2">
+                    {isYouTube ? (
+                      <p className="text-text-muted text-sm">5:00 limit</p>
+                    ) : (
+                      <>
+                        <p className="text-text-muted text-sm">{current?.track?.album}</p>
+                        {current?.track?.durationMs && (
+                          <>
+                            <span className="text-text-muted/30">·</span>
+                            <span className="text-text-muted text-sm">{formatDuration(current.track.durationMs)}</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {phase === 'playing' && (
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-4 w-full max-w-xs">
+                {/* Track timer */}
+                <div className="flex items-center gap-3 w-full">
+                  <div className="flex-1 h-1.5 bg-card rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 ${timerIsLow ? 'bg-neon-pink' : 'bg-neon-blue'}`}
+                      style={{ width: `${(trackTimeLeft / TRACK_SECONDS) * 100}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs font-mono font-bold tabular-nums w-9 text-right ${timerIsLow ? 'text-neon-pink' : 'text-text-muted'}`}>
+                    {formatTime(trackTimeLeft)}
+                  </span>
+                </div>
+
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => handleVote('up')}

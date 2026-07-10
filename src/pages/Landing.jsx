@@ -1,11 +1,15 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import CreateDuelModal from '../components/CreateDuelModal'
 import JoinDuelModal from '../components/JoinDuelModal'
+import { useAuth } from '../context/AuthContext'
 
 function Landing() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
+  const { user, logout, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
 
   return (
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
@@ -24,9 +28,40 @@ function Landing() {
             DJ <span className="text-neon-blue">Duels</span>
           </span>
         </div>
-        <button className="px-5 py-2 text-sm font-semibold rounded-full border border-neon-purple/40 text-neon-purple hover:bg-neon-purple/10 transition-colors cursor-pointer">
-          Sign In
-        </button>
+        {isAuthenticated ? (
+          <div className="flex items-center gap-3">
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/60 border border-text-muted/20 hover:border-neon-blue/30 transition-colors"
+            >
+              <div className="w-6 h-6 rounded-full bg-neon-blue/20 border border-neon-blue/40 flex items-center justify-center">
+                <span className="text-neon-blue text-xs font-bold">{user.username.charAt(0).toUpperCase()}</span>
+              </div>
+              <span className="text-text-secondary text-sm font-medium">{user.username}</span>
+            </Link>
+            <button
+              onClick={() => { logout(); navigate('/') }}
+              className="px-4 py-1.5 text-sm font-semibold rounded-full border border-text-muted/30 text-text-muted hover:text-text-secondary hover:border-text-muted/50 transition-colors cursor-pointer"
+            >
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Link
+              to="/login"
+              className="px-4 py-2 text-sm font-semibold rounded-full text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Sign In
+            </Link>
+            <Link
+              to="/signup"
+              className="px-5 py-2 text-sm font-semibold rounded-full border border-neon-purple/40 text-neon-purple hover:bg-neon-purple/10 transition-colors"
+            >
+              Sign Up
+            </Link>
+          </div>
+        )}
       </nav>
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
@@ -37,10 +72,8 @@ function Landing() {
         </div>
 
         <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1] mb-6 max-w-3xl">
-          <span className="text-text-primary">Drop the beat.</span>
-          <br />
-          <span className="bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink bg-clip-text text-transparent">
-            Claim the crown.
+          <span className="bg-gradient-to-r from-[#7ab8cc] via-[#9b8fc4] to-[#c47a9e] bg-clip-text text-transparent">
+            Who's got AUX
           </span>
         </h1>
 

@@ -5,7 +5,9 @@ import PlayerSlot from '../components/PlayerSlot'
 import LobbyStatus from '../components/LobbyStatus'
 import PlatformButton from '../components/PlatformButton'
 import LobbySettings from '../components/LobbySettings'
-import { PLAYER_NAMES, PLAYER_COLORS } from '../utils/duelUtils'
+import { useAuth } from '../context/AuthContext'
+import { useGameSocket } from '../hooks/useGameSocket'
+import { PLAYER_COLORS } from '../utils/duelUtils'
 import { buildBracket } from '../utils/demoData'
 
 const DEFAULT_SETTINGS = {
@@ -26,9 +28,11 @@ function Lobby() {
   const [searchParams] = useSearchParams()
   const isHost = searchParams.get('host') === 'true'
   const maxPlayers = parseInt(searchParams.get('players') || '5', 10)
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
   const [players, setPlayers] = useState(() => [{
-    name: isHost ? 'You (Host)' : 'You',
+    name: user?.username ?? (isHost ? 'You (Host)' : 'You'),
     color: PLAYER_COLORS[0],
     isHost,
   }])
@@ -36,9 +40,47 @@ function Lobby() {
   const [connectedPlatforms, setConnectedPlatforms] = useState({})
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
-  const navigate = useNavigate()
 
-  const lobbyLink = `${window.location.origin}/lobby/${duelId}`
+  const handleGameEvent = useCallback((event) => {
+    switch (event.type) {
+      case 'PLAYER_JOINED':
+        setPlayers(event.payload.players)
+        break
+      case 'GAME_STARTED': {
+        const p = event.payload
+        navigate(`/duel/${duelId}/round/1`, {
+          state: {
+            players: p.allPlayers,
+            allPlayers: p.allPlayers,
+            settings: p.settings,
+            bracket: p.bracket,
+            trackHistory: p.trackHistory,
+            player1: p.player1,
+            player2: p.player2,
+            roundLabel: p.roundLabel,
+          },
+        })
+        break
+      }
+      case 'SESSION_EXPIRED':
+      case 'SESSION_CLOSED':
+        navigate('/')
+        break
+      default:
+        break
+    }
+  }, [navigate, duelId])
+
+  const { send, isConnected } = useGameSocket(duelId, handleGameEvent)
+
+  // Send join message as soon as the socket is connected
+  useEffect(() => {
+    if (isConnected) {
+      send('lobby/join', { duelId, username: user?.username, isHost })
+    }
+  }, [isConnected, send, duelId, user?.username, isHost])
+
+  const lobbyLink = `${window.location.origin}/lobby/${duelId}?players=${maxPlayers}`
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(lobbyLink)
@@ -52,36 +94,18 @@ function Lobby() {
 
   const handleStartDuel = useCallback(() => {
     const bracket = buildBracket(players)
-    navigate(`/duel/${duelId}/round/1`, {
-      state: {
-        players,
-        allPlayers: players,
-        settings,
-        bracket,
-        trackHistory: {},
-        player1: players[0],
-        player2: players[1],
-        roundLabel: 'Semifinal 1',
-      },
+    send('lobby/start', {
+      duelId,
+      player1: players[0],
+      player2: players[1],
+      allPlayers: players,
+      bracket,
+      settings,
+      trackHistory: {},
+      roundLabel: 'Semifinal 1',
+      isFinal: false,
     })
-  }, [navigate, duelId, players, settings])
-
-  useEffect(() => {
-    if (players.length >= maxPlayers) return
-
-    const usedNames = new Set(players.map((p) => p.name))
-    const availableNames = PLAYER_NAMES.filter((n) => !usedNames.has(n))
-
-    const delay = 2000 + Math.random() * 3000
-    const timeout = setTimeout(() => {
-      if (availableNames.length === 0) return
-      const name = availableNames[Math.floor(Math.random() * availableNames.length)]
-      const color = PLAYER_COLORS[players.length % PLAYER_COLORS.length]
-      setPlayers((prev) => [...prev, { name, color, isHost: false }])
-    }, delay)
-
-    return () => clearTimeout(timeout)
-  }, [players, maxPlayers])
+  }, [send, duelId, players, settings])
 
   const slots = Array.from({ length: maxPlayers }, (_, i) => players[i] || null)
 
@@ -102,6 +126,10 @@ function Lobby() {
             DJ <span className="text-neon-blue">Duels</span>
           </span>
         </a>
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-neon-green' : 'bg-text-muted/40'}`} />
+          <span className="text-text-muted text-xs">{isConnected ? 'Connected' : 'Connecting...'}</span>
+        </div>
       </nav>
 
       <main className="relative z-10 flex-1 flex flex-col items-center px-6 py-8">
@@ -148,7 +176,6 @@ function Lobby() {
                 key={p.platform}
                 name={p.name}
                 platform={p.platform}
-
                 connected={!!connectedPlatforms[p.platform]}
                 onToggle={() => handleTogglePlatform(p.platform)}
               />
