@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
-import { DEMO_TRACKS } from '../utils/demoData'
+import AppNav from '../components/AppNav'
+import { useAuth } from '../context/AuthContext'
+import { useGameSocket } from '../hooks/useGameSocket'
 
 const COLOR_BG = {
   'neon-blue': 'bg-neon-blue/20',
@@ -47,15 +49,18 @@ function formatDuration(ms) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function AudienceMember({ player, isCurrentPerformer }) {
+function AudienceMember({ player, isCurrentPerformer, hasVoted }) {
   const bg = COLOR_BG[player.color] || COLOR_BG['neon-blue']
   const border = COLOR_BORDER[player.color] || COLOR_BORDER['neon-blue']
   const text = COLOR_TEXT[player.color] || COLOR_TEXT['neon-blue']
 
   return (
     <div className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${isCurrentPerformer ? 'scale-110' : 'opacity-60'}`}>
-      <div className={`w-10 h-10 rounded-full ${bg} border-2 ${border} flex items-center justify-center ${isCurrentPerformer ? 'ring-2 ring-neon-blue/40' : ''}`}>
+      <div className={`relative w-10 h-10 rounded-full ${bg} border-2 ${border} flex items-center justify-center ${isCurrentPerformer ? 'ring-2 ring-neon-blue/40' : ''}`}>
         <span className={`${text} font-bold text-sm`}>{player.name.charAt(0)}</span>
+        {hasVoted && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-neon-green border border-midnight flex items-center justify-center text-[8px] font-bold text-midnight">✓</span>
+        )}
       </div>
       <span className="text-text-muted text-xs truncate max-w-[60px]">{player.name}</span>
     </div>
@@ -66,23 +71,24 @@ function Stage() {
   const { duelId, roundNum } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
+
   const {
     player1, player2, track1, track2,
-    allPlayers = [], bracket, trackHistory = {},
-    roundLabel, isFinal,
-  } = location.state || {}
+    allPlayers = [], trackHistory = {},
+    roundLabel,
+  } = location.state ?? {}
   const round = parseInt(roundNum, 10)
 
   const [phase, setPhase] = useState('intro')
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const [vote, setVote] = useState(null)
-  const [votes, setVotes] = useState({ up: 0, down: 0 })
-  const [playerVotes, setPlayerVotes] = useState({
-    player1: { up: 0, down: 0 },
-    player2: { up: 0, down: 0 },
-  })
   const [trackTimeLeft, setTrackTimeLeft] = useState(TRACK_SECONDS)
   const [songStopped, setSongStopped] = useState(false)
+  // songIndex -> { up, down, voterCount, totalPlayers, voters[] }
+  const [serverSongVotes, setServerSongVotes] = useState({})
+  // Server-authoritative end timestamp for the current song; syncs all clients
+  const [songEndsAt, setSongEndsAt] = useState(location.state?.songEndsAt ?? null)
 
   const tracks = [
     { track: track1, player: player1, key: 'player1' },
@@ -90,141 +96,99 @@ function Stage() {
   ]
   const current = tracks[currentTrackIndex]
 
+  useEffect(() => {
+    if (!player1 || !player2 || !track1 || !track2) navigate('/', { replace: true })
+  }, [player1, player2, track1, track2, navigate])
+
+  const handleGameEvent = useCallback((event) => {
+    switch (event.type) {
+      case 'VOTE_UPDATE': {
+        const { songIndex, tally, voterCount, totalPlayers, voters } = event.payload
+        setServerSongVotes((prev) => ({
+          ...prev,
+          [songIndex]: { up: tally.up, down: tally.down, voterCount, totalPlayers, voters: voters || [] },
+        }))
+        break
+      }
+      case 'SONG_COMPLETE': {
+        if (event.payload.songIndex !== 0) break
+        setSongEndsAt(event.payload.nextSongEndsAt ?? null)
+        setCurrentTrackIndex(1)
+        setVote(null)
+        setTrackTimeLeft(TRACK_SECONDS)
+        setSongStopped(false)
+        setPhase('intro')
+        setTimeout(() => setPhase('playing'), 1500)
+        break
+      }
+      case 'ROUND_COMPLETE': {
+        const { winnerName, loserName, winnerVotes, loserVotes } = event.payload
+        setPhase('finished')
+        const winner = winnerName === player1?.name ? player1 : player2
+        const loser = loserName === player1?.name ? player1 : player2
+        const winnerTrack = winner === player1 ? track1 : track2
+        const newTrackHistory = { ...trackHistory }
+        if (!newTrackHistory[winner?.name]) newTrackHistory[winner?.name] = []
+        newTrackHistory[winner?.name] = [...newTrackHistory[winner?.name], winnerTrack]
+        setTimeout(() => {
+          navigate(`/duel/${duelId}/round/${roundNum}/winner`, {
+            state: {
+              winner, loser,
+              winnerVotes: { up: winnerVotes.up, down: winnerVotes.down },
+              loserVotes: { up: loserVotes.up, down: loserVotes.down },
+              roundLabel: roundLabel || 'Round 1',
+              nextAction: 'champion',
+              allPlayers, trackHistory: newTrackHistory,
+            },
+          })
+        }, 2000)
+        break
+      }
+      default:
+        break
+    }
+  }, [player1, player2, track1, track2, trackHistory, roundLabel, duelId, roundNum, allPlayers, navigate])
+
+  const { send } = useGameSocket(duelId, handleGameEvent)
+
   // Intro → playing transition
   useEffect(() => {
     const timer = setTimeout(() => setPhase('playing'), 1500)
     return () => clearTimeout(timer)
   }, [])
 
-  // Countdown — one interval while playing, functional update avoids stale closure
+  // Countdown — recalculates from server timestamp each second so all clients stay in lockstep.
+  // Falls back to local decrement if no server timestamp (offline/test).
   useEffect(() => {
     if (phase !== 'playing') return
-    const id = setInterval(() => setTrackTimeLeft((t) => (t > 0 ? t - 1 : 0)), 1000)
+    const tick = songEndsAt
+      ? () => setTrackTimeLeft(Math.max(0, Math.round((songEndsAt - Date.now()) / 1000)))
+      : () => setTrackTimeLeft((t) => (t > 0 ? t - 1 : 0))
+    tick()
+    const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [phase])
+  }, [phase, songEndsAt])
 
-  // Ref so the auto-advance callback always calls the latest handleNext
-  const handleNextRef = useRef(null)
-
-  // Auto-advance when timer hits 0; defer setState into a timeout so it isn't synchronous in effect body
+  // When timer hits 0: auto-cast a down vote via server if player hasn't voted yet.
+  // The server drives the actual song advance via SONG_COMPLETE / ROUND_COMPLETE.
+  // songStopped in deps prevents double-fire on re-render.
   useEffect(() => {
-    if (trackTimeLeft > 0 || phase !== 'playing') return
+    if (trackTimeLeft > 0 || phase !== 'playing' || songStopped) return
     const t = setTimeout(() => {
       setSongStopped(true)
       if (!vote) {
         setVote('down')
-        setVotes((prev) => ({ ...prev, down: prev.down + 1 }))
+        send('round/vote', { duelId, voterUsername: user?.username, songIndex: currentTrackIndex, vote: 'down' })
       }
-      setTimeout(() => handleNextRef.current?.(), 1500)
     }, 0)
     return () => clearTimeout(t)
-  }, [trackTimeLeft, phase, vote])
+  }, [trackTimeLeft, phase, vote, songStopped, send, duelId, user?.username, currentTrackIndex])
 
   function handleVote(direction) {
     if (vote) return
     setVote(direction)
-    setVotes((prev) => ({ ...prev, [direction]: prev[direction] + 1 }))
+    send('round/vote', { duelId, voterUsername: user?.username, songIndex: currentTrackIndex, vote: direction })
   }
-
-  function handleNext() {
-    const updatedPlayerVotes = {
-      ...playerVotes,
-      [current.key]: {
-        up: playerVotes[current.key].up + votes.up,
-        down: playerVotes[current.key].down + votes.down,
-      },
-    }
-    setPlayerVotes(updatedPlayerVotes)
-
-    if (currentTrackIndex < tracks.length - 1) {
-      setCurrentTrackIndex((i) => i + 1)
-      setVote(null)
-      setVotes({ up: 0, down: 0 })
-      setTrackTimeLeft(TRACK_SECONDS)
-      setSongStopped(false)
-      setPhase('intro')
-      setTimeout(() => setPhase('playing'), 1500)
-    } else {
-      setPhase('finished')
-      const finalVotes = updatedPlayerVotes
-      setTimeout(() => {
-        const p1Fire = finalVotes.player1.up
-        const p2Fire = finalVotes.player2.up
-        const winner = p1Fire >= p2Fire ? player1 : player2
-        const loser = p1Fire >= p2Fire ? player2 : player1
-        const winnerVotes = p1Fire >= p2Fire ? finalVotes.player1 : finalVotes.player2
-        const loserVotes = p1Fire >= p2Fire ? finalVotes.player2 : finalVotes.player1
-        const winnerTrack = p1Fire >= p2Fire ? track1 : track2
-
-        const newTrackHistory = { ...trackHistory }
-        if (!newTrackHistory[winner.name]) newTrackHistory[winner.name] = []
-        newTrackHistory[winner.name] = [...newTrackHistory[winner.name], winnerTrack]
-
-        let nextAction, nextState
-
-        if (isFinal) {
-          nextAction = 'champion'
-        } else if (bracket && bracket.semifinals[1] && !bracket.results[1]) {
-          const sf2 = bracket.semifinals[1]
-          const sf2Track1 = DEMO_TRACKS[sf2.player1.name]?.[0]
-          const sf2Track2 = DEMO_TRACKS[sf2.player2.name]?.[0]
-          const sf2P1Fire = Math.floor(Math.random() * 5) + 1
-          const sf2P2Fire = Math.floor(Math.random() * 5) + 1
-          const sf2Winner = sf2P1Fire >= sf2P2Fire ? sf2.player1 : sf2.player2
-          const sf2Loser = sf2P1Fire >= sf2P2Fire ? sf2.player2 : sf2.player1
-          const sf2WinnerVotes = { up: Math.max(sf2P1Fire, sf2P2Fire), down: Math.floor(Math.random() * 3) }
-          const sf2LoserVotes = { up: Math.min(sf2P1Fire, sf2P2Fire), down: Math.floor(Math.random() * 4) + 1 }
-          const sf2WinnerTrack = sf2P1Fire >= sf2P2Fire ? sf2Track1 : sf2Track2
-
-          const sf2TrackHistory = { ...newTrackHistory }
-          if (!sf2TrackHistory[sf2Winner.name]) sf2TrackHistory[sf2Winner.name] = []
-          sf2TrackHistory[sf2Winner.name] = [...sf2TrackHistory[sf2Winner.name], sf2WinnerTrack]
-
-          const updatedBracket = {
-            ...bracket,
-            results: [{ winner, loser }, { winner: sf2Winner, loser: sf2Loser }],
-          }
-
-          nextAction = 'auto-semifinal'
-          nextState = {
-            winner: sf2Winner,
-            loser: sf2Loser,
-            winnerVotes: sf2WinnerVotes,
-            loserVotes: sf2LoserVotes,
-            roundLabel: 'Semifinal 2',
-            bracket: updatedBracket,
-            trackHistory: sf2TrackHistory,
-            allPlayers,
-            nextAction: 'faceoff',
-            nextState: {
-              roundNum: round + 2,
-              players: allPlayers,
-              bracket: updatedBracket,
-              trackHistory: sf2TrackHistory,
-              player1: winner,
-              player2: sf2Winner,
-              isFinal: true,
-              roundLabel: 'Final',
-              allPlayers,
-            },
-          }
-        }
-
-        navigate(`/duel/${duelId}/round/${roundNum}/winner`, {
-          state: {
-            winner, loser,
-            winnerVotes, loserVotes,
-            roundLabel: roundLabel || `Semifinal ${round}`,
-            bracket, trackHistory: newTrackHistory, allPlayers,
-            nextAction, nextState,
-          },
-        })
-      }, 2000)
-    }
-  }
-
-  // Keep ref current after every render so the timer callback always calls latest
-  useEffect(() => { handleNextRef.current = handleNext })
 
   const color = current?.player?.color || 'neon-blue'
   const textClass = COLOR_TEXT[color] || COLOR_TEXT['neon-blue']
@@ -235,6 +199,13 @@ function Stage() {
   const isSpotify = current?.track?.source === 'spotify' && !!current?.track?.id
   const isYouTube = current?.track?.source === 'youtube' && !!current?.track?.videoId
   const timerIsLow = trackTimeLeft < 10
+
+  if (!player1 || !player2 || !track1 || !track2) return null
+
+  const currentSongVotes = serverSongVotes[currentTrackIndex] || { up: 0, down: 0, voterCount: 0, totalPlayers: 0, voters: [] }
+  const votesRemaining = currentSongVotes.totalPlayers > 0
+    ? currentSongVotes.totalPlayers - currentSongVotes.voterCount
+    : null
 
   return (
     <div className="relative min-h-svh flex flex-col overflow-x-hidden bg-gradient-to-b from-[#050510] via-[#060614] to-[#050510]">
@@ -248,17 +219,11 @@ function Stage() {
 
       <div className={`absolute inset-0 bg-black/40 pointer-events-none transition-opacity duration-1000 ${phase === 'playing' ? 'opacity-100' : 'opacity-0'}`} />
 
-      <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
-        <a href="/" className="flex items-center gap-2 no-underline">
-          <span className="text-2xl">🎧</span>
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-neon-blue">Duels</span>
-          </span>
-        </a>
+      <AppNav right={
         <span className="px-3 py-1.5 text-xs font-semibold rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20">
           {roundLabel || `Round ${round}`}
         </span>
-      </nav>
+      } />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-4">
         {phase === 'finished' ? (
@@ -273,21 +238,20 @@ function Stage() {
                 <span className={`${textClass} font-bold text-sm`}>{current?.player?.name?.charAt(0)}</span>
               </div>
               <div>
-                <p className={`${textClass} font-bold text-sm`}>{current?.player?.name}'s pick</p>
+                <p className={`${textClass} font-bold text-sm`}>{current?.player?.name}&apos;s pick</p>
                 <p className="text-text-muted text-xs">Track {currentTrackIndex + 1} of {tracks.length}</p>
               </div>
             </div>
 
             <div className={`transition-all duration-700 w-full max-w-2xl mx-auto ${phase === 'intro' ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-              {/* Player area */}
               {songStopped ? (
                 <div className="w-full bg-card/60 border border-text-muted/15 rounded-2xl p-8 text-center mb-6">
                   <span className="text-3xl block mb-2">⏱️</span>
-                  <p className={`${textClass} font-bold text-lg`}>Time's Up!</p>
+                  <p className={`${textClass} font-bold text-lg`}>Time&apos;s Up!</p>
                   <p className="text-text-primary font-semibold mt-2">{current?.track?.name}</p>
                   <p className="text-text-secondary text-sm">{current?.track?.artist}</p>
                 </div>
-              ) : isYouTube ? (
+              ) : phase === 'playing' && isYouTube ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <iframe
                     src={`https://www.youtube.com/embed/${current.track.videoId}?autoplay=1&enablejsapi=1&end=300`}
@@ -297,19 +261,17 @@ function Stage() {
                     allowFullScreen
                   />
                 </div>
-              ) : isSpotify ? (
+              ) : phase === 'playing' && isSpotify ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <iframe
-                    src={`https://open.spotify.com/embed/track/${current.track.id}?theme=0&utm_source=generator`}
+                    src={`https://open.spotify.com/embed/track/${current.track.id}?utm_source=generator&theme=0&autoplay=1`}
                     title={current.track.name}
                     className="w-full h-[352px]"
                     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"
                   />
                 </div>
               ) : null}
 
-              {/* Track info — shown for YouTube and no-embed; Spotify embed renders its own */}
               {!isSpotify && (
                 <div className="text-center mb-8">
                   <h2 className={`${textClass} font-bold text-2xl md:text-3xl mb-1`}>{current?.track?.name}</h2>
@@ -348,6 +310,7 @@ function Stage() {
                   </span>
                 </div>
 
+                {/* Vote buttons */}
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => handleVote('up')}
@@ -361,7 +324,7 @@ function Stage() {
                     }`}
                   >
                     <span className="text-lg">🔥</span>
-                    <span className="font-semibold text-sm">{votes.up}</span>
+                    <span className="font-semibold text-sm">{currentSongVotes.up}</span>
                   </button>
                   <button
                     onClick={() => handleVote('down')}
@@ -375,16 +338,18 @@ function Stage() {
                     }`}
                   >
                     <span className="text-lg">🗑️</span>
-                    <span className="font-semibold text-sm">{votes.down}</span>
+                    <span className="font-semibold text-sm">{currentSongVotes.down}</span>
                   </button>
                 </div>
 
-                <button
-                  onClick={handleNext}
-                  className="px-6 py-2 text-sm font-semibold rounded-full border border-text-muted/30 text-text-muted hover:text-text-secondary hover:border-text-muted/50 transition-all duration-200 cursor-pointer"
-                >
-                  Next →
-                </button>
+                {/* Voter progress */}
+                {vote && votesRemaining !== null && (
+                  <p className="text-text-muted text-xs text-center">
+                    {votesRemaining > 0
+                      ? `Waiting for ${votesRemaining} more vote${votesRemaining !== 1 ? 's' : ''}...`
+                      : 'All votes in!'}
+                  </p>
+                )}
               </div>
             )}
           </>
@@ -398,6 +363,7 @@ function Stage() {
               key={i}
               player={p}
               isCurrentPerformer={p.name === current?.player?.name}
+              hasVoted={currentSongVotes.voters.includes(p.name)}
             />
           ))}
         </div>

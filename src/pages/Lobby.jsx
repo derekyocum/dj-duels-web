@@ -5,12 +5,13 @@ import PlayerSlot from '../components/PlayerSlot'
 import LobbyStatus from '../components/LobbyStatus'
 import PlatformButton from '../components/PlatformButton'
 import LobbySettings from '../components/LobbySettings'
+import AppNav from '../components/AppNav'
 import { useAuth } from '../context/AuthContext'
 import { useGameSocket } from '../hooks/useGameSocket'
 import { PLAYER_COLORS } from '../utils/duelUtils'
-import { buildBracket } from '../utils/demoData'
 
 const DEFAULT_SETTINGS = {
+  title: '',
   timeLimit: 90,
   songLengthLimit: null,
   genre: 'Any genre',
@@ -27,7 +28,8 @@ function Lobby() {
   const { duelId } = useParams()
   const [searchParams] = useSearchParams()
   const isHost = searchParams.get('host') === 'true'
-  const maxPlayers = parseInt(searchParams.get('players') || '5', 10)
+  const urlMaxPlayers = parseInt(searchParams.get('players') || '2', 10)
+  const [maxPlayers, setMaxPlayers] = useState(urlMaxPlayers)
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -45,6 +47,7 @@ function Lobby() {
     switch (event.type) {
       case 'PLAYER_JOINED':
         setPlayers(event.payload.players)
+        if (event.payload.maxPlayers) setMaxPlayers(event.payload.maxPlayers)
         break
       case 'GAME_STARTED': {
         const p = event.payload
@@ -58,6 +61,7 @@ function Lobby() {
             player1: p.player1,
             player2: p.player2,
             roundLabel: p.roundLabel,
+            faceoffEndsAt: p.faceoffEndsAt,
           },
         })
         break
@@ -76,9 +80,9 @@ function Lobby() {
   // Send join message as soon as the socket is connected
   useEffect(() => {
     if (isConnected) {
-      send('lobby/join', { duelId, username: user?.username, isHost })
+      send('lobby/join', { duelId, username: user?.username, isHost, maxPlayers: urlMaxPlayers })
     }
-  }, [isConnected, send, duelId, user?.username, isHost])
+  }, [isConnected, send, duelId, user?.username, isHost, urlMaxPlayers])
 
   const lobbyLink = `${window.location.origin}/lobby/${duelId}?players=${maxPlayers}`
 
@@ -93,16 +97,15 @@ function Lobby() {
   }, [])
 
   const handleStartDuel = useCallback(() => {
-    const bracket = buildBracket(players)
     send('lobby/start', {
       duelId,
       player1: players[0],
       player2: players[1],
       allPlayers: players,
-      bracket,
+      bracket: {},
       settings,
       trackHistory: {},
-      roundLabel: 'Semifinal 1',
+      roundLabel: 'Round 1',
       isFinal: false,
     })
   }, [send, duelId, players, settings])
@@ -119,18 +122,12 @@ function Lobby() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[400px] bg-neon-blue/8 rounded-full blur-[100px]" />
       </div>
 
-      <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
-        <a href="/" className="flex items-center gap-2 no-underline">
-          <span className="text-2xl">🎧</span>
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-neon-blue">Duels</span>
-          </span>
-        </a>
+      <AppNav right={
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-neon-green' : 'bg-text-muted/40'}`} />
           <span className="text-text-muted text-xs">{isConnected ? 'Connected' : 'Connecting...'}</span>
         </div>
-      </nav>
+      } />
 
       <main className="relative z-10 flex-1 flex flex-col items-center px-6 py-8">
         <div className="mb-8 flex flex-col items-center gap-2">
@@ -157,6 +154,21 @@ function Lobby() {
             )}
           </div>
         </div>
+
+        {settings.title && (
+          <div className="mb-6 flex items-center gap-2 px-5 py-3 bg-neon-purple/10 border border-neon-purple/25 rounded-2xl max-w-md w-full">
+            <span className="text-lg">🎵</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-text-muted text-[10px] uppercase tracking-widest font-medium">Tonight&apos;s Theme</span>
+              <span className="text-text-primary font-semibold text-sm truncate">{settings.title}</span>
+            </div>
+            {settings.genre && settings.genre !== 'Any genre' && (
+              <span className="ml-auto shrink-0 text-xs text-neon-purple border border-neon-purple/30 bg-neon-purple/10 px-2.5 py-1 rounded-full">
+                {settings.genre}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="mb-10 w-full max-w-md">
           <LobbyStatus currentCount={players.length} maxCount={maxPlayers} onStartDuel={handleStartDuel} />

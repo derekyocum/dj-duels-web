@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
+import AppNav from '../components/AppNav'
 
 const COLOR_BG = {
   'neon-blue': 'bg-neon-blue/20',
@@ -64,14 +65,20 @@ function RoundWinner() {
     winnerVotes, loserVotes,
     roundLabel,
     trackHistory, allPlayers,
-  } = location.state || {}
+  } = location.state ?? {}
 
   const [revealed, setRevealed] = useState(false)
+
+  useEffect(() => {
+    if (!winner || !loser) navigate('/', { replace: true })
+  }, [winner, loser, navigate])
 
   useEffect(() => {
     const timer = setTimeout(() => setRevealed(true), 800)
     return () => clearTimeout(timer)
   }, [])
+
+  if (!winner || !loser) return null
 
   const handleNextRound = () => {
     const { nextAction, nextState } = location.state || {}
@@ -101,14 +108,7 @@ function RoundWinner() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[400px] bg-neon-blue/8 rounded-full blur-[100px]" />
       </div>
 
-      <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
-        <a href="/" className="flex items-center gap-2 no-underline">
-          <span className="text-2xl">🎧</span>
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-neon-blue">Duels</span>
-          </span>
-        </a>
-      </nav>
+      <AppNav />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-8">
         <span className="inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20 mb-6">

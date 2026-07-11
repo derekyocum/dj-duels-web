@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
+import AppNav from '../components/AppNav'
 import { useGameSocket } from '../hooks/useGameSocket'
 
 const COLOR_BG = {
@@ -27,6 +28,60 @@ const COLOR_TEXT = {
   'neon-yellow': 'text-neon-yellow',
 }
 
+const FIREWORK_COLORS = ['#00D4FF', '#B347FF', '#FF2D95', '#39FF14', '#FFE01F']
+
+function Fireworks() {
+  const particles = useMemo(() =>
+    [0, 0.6, 1.2].flatMap((waveDelay, w) =>
+      Array.from({ length: 14 }, (_, i) => {
+        const angle = (i / 14) * 360 + w * 13
+        const dist = 55 + (i % 4) * 20
+        const rad = (angle * Math.PI) / 180
+        return {
+          id: `${w}-${i}`,
+          tx: Math.cos(rad) * dist,
+          ty: Math.sin(rad) * dist,
+          color: FIREWORK_COLORS[(i + w * 2) % FIREWORK_COLORS.length],
+          delay: waveDelay + i * 0.005,
+          size: 3 + (i % 3),
+        }
+      })
+    )
+  , [])
+
+  return (
+    <>
+      <style>{`
+        @keyframes fw-particle {
+          0%   { opacity: 1; transform: translate(-50%, -50%); }
+          75%  { opacity: 0.9; }
+          100% { opacity: 0; transform: translate(calc(-50% + var(--fw-tx)), calc(-50% + var(--fw-ty))); }
+        }
+      `}</style>
+      <div className="absolute inset-0 pointer-events-none overflow-visible" aria-hidden="true">
+        {particles.map(({ id, tx, ty, color, delay, size }) => (
+          <div
+            key={id}
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: size,
+              height: size,
+              borderRadius: '50%',
+              background: color,
+              boxShadow: `0 0 ${size * 2}px ${color}90`,
+              animation: `fw-particle 1.0s ease-out ${delay}s both`,
+              '--fw-tx': `${tx}px`,
+              '--fw-ty': `${ty}px`,
+            }}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
+
 function formatTime(s) {
   const clamped = Math.max(0, s)
   return `${Math.floor(clamped / 60)}:${String(clamped % 60).padStart(2, '0')}`
@@ -36,12 +91,13 @@ function Champion() {
   const { duelId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const { champion, trackHistory = {} } = location.state || {}
+  const { champion, trackHistory = {} } = location.state ?? {}
   const tracks = trackHistory[champion?.name] || []
 
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [closeAt, setCloseAt] = useState(null)
   const [secondsLeft, setSecondsLeft] = useState(null)
+  const [showFireworks, setShowFireworks] = useState(true)
   const gameSentRef = useRef(false)
   const autoScrollRef = useRef(null)
 
@@ -58,6 +114,12 @@ function Champion() {
     return () => clearInterval(autoScrollRef.current)
   }, [tracks.length])
 
+  // Fireworks run for ~2.4 s (3 waves × ~0.6 s gap + 1 s duration)
+  useEffect(() => {
+    const id = setTimeout(() => setShowFireworks(false), 2500)
+    return () => clearTimeout(id)
+  }, [])
+
   const handleGameEvent = useCallback((event) => {
     if (event.type === 'SESSION_CLOSING') {
       setCloseAt(event.payload.closeAt)
@@ -68,7 +130,10 @@ function Champion() {
 
   const { send, isConnected } = useGameSocket(duelId, handleGameEvent)
 
-  // Send game/end once when first connected
+  useEffect(() => {
+    if (!champion) navigate('/', { replace: true })
+  }, [champion, navigate])
+
   useEffect(() => {
     if (isConnected && !gameSentRef.current) {
       gameSentRef.current = true
@@ -76,7 +141,6 @@ function Champion() {
     }
   }, [isConnected, send, duelId])
 
-  // Countdown tick driven by the closeAt timestamp from the server
   useEffect(() => {
     if (!closeAt) return
     const tick = () => setSecondsLeft(Math.ceil((closeAt - Date.now()) / 1000))
@@ -84,6 +148,8 @@ function Champion() {
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
   }, [closeAt])
+
+  if (!champion) return null
 
   return (
     <div className="relative min-h-svh flex flex-col overflow-x-hidden bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
@@ -95,41 +161,19 @@ function Champion() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[400px] bg-neon-blue/8 rounded-full blur-[100px]" />
       </div>
 
-      <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
-        <a href="/" className="flex items-center gap-2 no-underline">
-          <span className="text-2xl">🎧</span>
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-neon-blue">Duels</span>
-          </span>
-        </a>
-      </nav>
-
-      {/* Closing countdown banner */}
-      {closeAt && secondsLeft !== null && (
-        <div className="relative z-10 mx-6 mb-2">
-          <div className="bg-card/60 border border-text-muted/15 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4">
-            <p className="text-text-secondary text-xs">Lobby closes in</p>
-            <span className={`font-mono font-bold text-sm tabular-nums ${secondsLeft < 30 ? 'text-neon-pink' : 'text-text-primary'}`}>
-              {formatTime(secondsLeft)}
-            </span>
-            <div className="flex-1 h-1 bg-card rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-1000 ${secondsLeft < 30 ? 'bg-neon-pink' : 'bg-neon-blue'}`}
-                style={{ width: `${Math.max(0, (secondsLeft / 180) * 100)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <AppNav />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-8">
-        <span className="text-5xl mb-4">👑</span>
-
-        <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none mb-2 text-center">
-          <span className="bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink bg-clip-text text-transparent">
-            Give {champion?.name} aux!
-          </span>
-        </h1>
+        {/* Title + fireworks container */}
+        <div className="relative flex flex-col items-center mb-2">
+          {showFireworks && <Fireworks />}
+          <span className="text-5xl mb-4">👑</span>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none text-center">
+            <span className="bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink bg-clip-text text-transparent">
+              Give {champion?.name} aux!
+            </span>
+          </h1>
+        </div>
 
         <div className="mt-8 mb-6">
           <div className={`w-28 h-28 rounded-full ${bg} border-4 ${border} shadow-[0_0_60px_rgba(0,212,255,0.3)] flex items-center justify-center mx-auto`}>
@@ -190,6 +234,20 @@ function Champion() {
       </main>
 
       <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
+        {closeAt && secondsLeft !== null && (
+          <div className={`flex items-center justify-center gap-3 mb-3 transition-opacity duration-500 ${secondsLeft < 30 ? 'opacity-50' : 'opacity-20'}`}>
+            <span className="text-[10px] text-text-muted">lobby closes in</span>
+            <div className="w-20 h-px bg-text-muted/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-text-muted/40 transition-all duration-1000"
+                style={{ width: `${Math.max(0, (secondsLeft / 180) * 100)}%` }}
+              />
+            </div>
+            <span className="font-mono text-[10px] text-text-muted tabular-nums">
+              {formatTime(secondsLeft)}
+            </span>
+          </div>
+        )}
         &copy; {new Date().getFullYear()} DJ Duels
       </footer>
     </div>
