@@ -113,6 +113,17 @@ function LobbySettings({ isOpen, onClose, settings, onSettingsChange }) {
         </div>
 
         <div className="space-y-5">
+          <SettingSection label="Duel Theme">
+            <input
+              type="text"
+              value={settings.title || ''}
+              onChange={(e) => update('title', e.target.value)}
+              placeholder="e.g. Best 90s Banger, Saturday Night Vibes..."
+              maxLength={48}
+              className="w-full bg-midnight/80 border border-text-muted/20 text-text-primary rounded-xl px-4 py-2.5 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
+            />
+          </SettingSection>
+
           <SettingSection label="Song Selection Time">
             <OptionGrid
               options={TIME_LIMIT_OPTIONS}
