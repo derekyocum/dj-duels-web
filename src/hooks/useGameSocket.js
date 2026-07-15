@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Client } from '@stomp/stompjs'
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws'
+// VITE_WS_URL may be just the API origin (e.g. wss://api.dj-duels.com) or the
+// full broker URL. Normalize so it always targets the STOMP endpoint at /ws.
+function resolveWsUrl() {
+  const raw = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws'
+  const trimmed = raw.replace(/\/+$/, '')
+  return trimmed.endsWith('/ws') ? trimmed : `${trimmed}/ws`
+}
+
+const WS_URL = resolveWsUrl()
 
 const getStoredToken = () => {
   try {
