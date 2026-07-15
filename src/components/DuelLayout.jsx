@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router'
 import ProtectedRoute from './ProtectedRoute'
+import DuelResync from './DuelResync'
 import { DuelSocketProvider } from '../context/DuelSocketContext'
 
 // The lobby (/lobby/:duelId) and the in-duel pages (/duel/:duelId/...) share a
@@ -14,6 +15,7 @@ function DuelLayout() {
   return (
     <ProtectedRoute>
       <DuelSocketProvider duelId={duelId}>
+        <DuelResync duelId={duelId} />
         <Outlet />
       </DuelSocketProvider>
     </ProtectedRoute>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import AppNav from '../components/AppNav'
+import Reconnecting from '../components/Reconnecting'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
@@ -81,7 +82,7 @@ function Stage() {
   const round = parseInt(roundNum, 10)
 
   const [phase, setPhase] = useState('intro')
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(() => location.state?.currentSongIndex ?? 0)
   const [vote, setVote] = useState(null)
   const [trackTimeLeft, setTrackTimeLeft] = useState(TRACK_SECONDS)
   const [songStopped, setSongStopped] = useState(false)
@@ -96,9 +97,24 @@ function Stage() {
   ]
   const current = tracks[currentTrackIndex]
 
+  // If we mounted without state (reconnect / direct URL), wait for the server
+  // snapshot to route + rehydrate us before giving up.
   useEffect(() => {
-    if (!player1 || !player2 || !track1 || !track2) navigate('/', { replace: true })
+    if (player1 && player2 && track1 && track2) return
+    const t = setTimeout(() => navigate('/', { replace: true }), 6000)
+    return () => clearTimeout(t)
   }, [player1, player2, track1, track2, navigate])
+
+  // Adopt the server's song position + deadline when state is (re)delivered on
+  // resync (a new location.state object). These live in useState — unlike the
+  // inline reads above — so we reconcile them here using React's "adjust state
+  // during render" pattern rather than an effect.
+  const [syncedState, setSyncedState] = useState(location.state)
+  if (location.state !== syncedState) {
+    setSyncedState(location.state)
+    if (typeof location.state?.currentSongIndex === 'number') setCurrentTrackIndex(location.state.currentSongIndex)
+    if (location.state?.songEndsAt) setSongEndsAt(location.state.songEndsAt)
+  }
 
   const handleGameEvent = useCallback((event) => {
     switch (event.type) {
@@ -201,7 +217,7 @@ function Stage() {
   const isYouTube = current?.track?.source === 'youtube' && !!current?.track?.videoId
   const timerIsLow = trackTimeLeft < 10
 
-  if (!player1 || !player2 || !track1 || !track2) return null
+  if (!player1 || !player2 || !track1 || !track2) return <Reconnecting />
 
   const currentSongVotes = serverSongVotes[currentTrackIndex] || { up: 0, down: 0, voterCount: 0, totalPlayers: 0, voters: [] }
   const votesRemaining = currentSongVotes.totalPlayers > 0

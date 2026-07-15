@@ -4,6 +4,7 @@ import MusicNotes from '../components/MusicNotes'
 import SongSelection from '../components/SongSelection'
 import SpectatorView from '../components/SpectatorView'
 import AppNav from '../components/AppNav'
+import Reconnecting from '../components/Reconnecting'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
@@ -61,8 +62,12 @@ function Faceoff() {
   const { send } = useDuelSocket()
   useDuelEvents(handleGameEvent)
 
+  // If we mounted without state (reconnect / direct URL), wait for the server
+  // snapshot to route + rehydrate us before giving up.
   useEffect(() => {
-    if (!battler1 || !battler2) navigate('/', { replace: true })
+    if (battler1 && battler2) return
+    const t = setTimeout(() => navigate('/', { replace: true }), 6000)
+    return () => clearTimeout(t)
   }, [battler1, battler2, navigate])
 
   const handleLockIn = useCallback((trackInfo) => {
@@ -70,7 +75,7 @@ function Faceoff() {
     send('round/lock-in', { duelId, username: user?.username, track: trackInfo })
   }, [send, duelId, user?.username])
 
-  if (!battler1 || !battler2) return null
+  if (!battler1 || !battler2) return <Reconnecting />
 
   return (
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">

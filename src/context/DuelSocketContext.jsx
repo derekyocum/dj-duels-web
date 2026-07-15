@@ -59,7 +59,12 @@ export function DuelSocketProvider({ duelId, children }) {
       onConnect: () => {
         client.subscribe(`/topic/lobby/${duelId}`, (msg) => dispatchEvent(JSON.parse(msg.body)))
         client.subscribe(`/topic/round/${duelId}`, (msg) => dispatchEvent(JSON.parse(msg.body)))
+        // Per-user reply channel for state snapshots (resync).
+        client.subscribe('/user/queue/duel', (msg) => dispatchEvent(JSON.parse(msg.body)))
         setIsConnected(true)
+        // Ask the server where we are on every (re)connect so a reconnect or a
+        // full refresh self-heals to the correct page instead of getting stuck.
+        client.publish({ destination: '/app/duel/sync', body: JSON.stringify({ duelId }) })
         // Flush anything queued while disconnected (e.g. a lock-in fired before
         // the socket finished connecting after a page transition).
         const queued = outboxRef.current
