@@ -7,7 +7,7 @@ import PlatformButton from '../components/PlatformButton'
 import LobbySettings from '../components/LobbySettings'
 import AppNav from '../components/AppNav'
 import { useAuth } from '../context/AuthContext'
-import { useGameSocket } from '../hooks/useGameSocket'
+import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 import { PLAYER_COLORS } from '../utils/duelUtils'
 
 const DEFAULT_SETTINGS = {
@@ -75,7 +75,8 @@ function Lobby() {
     }
   }, [navigate, duelId])
 
-  const { send, isConnected } = useGameSocket(duelId, handleGameEvent)
+  const { send, isConnected } = useDuelSocket()
+  useDuelEvents(handleGameEvent)
 
   // Send join message as soon as the socket is connected
   useEffect(() => {

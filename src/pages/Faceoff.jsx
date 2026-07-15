@@ -5,7 +5,7 @@ import SongSelection from '../components/SongSelection'
 import SpectatorView from '../components/SpectatorView'
 import AppNav from '../components/AppNav'
 import { useAuth } from '../context/AuthContext'
-import { useGameSocket } from '../hooks/useGameSocket'
+import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
 function Faceoff() {
   const { duelId, roundNum } = useParams()
@@ -58,7 +58,8 @@ function Faceoff() {
     }
   }, [navigate, duelId, roundNum])
 
-  const { send } = useGameSocket(duelId, handleGameEvent)
+  const { send } = useDuelSocket()
+  useDuelEvents(handleGameEvent)
 
   useEffect(() => {
     if (!battler1 || !battler2) navigate('/', { replace: true })

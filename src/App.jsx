@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import DuelLayout from './components/DuelLayout'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -21,11 +22,14 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/lobby/:duelId" element={<ProtectedRoute><Lobby /></ProtectedRoute>} />
-          <Route path="/duel/:duelId/round/:roundNum" element={<ProtectedRoute><Faceoff /></ProtectedRoute>} />
-          <Route path="/duel/:duelId/round/:roundNum/stage" element={<ProtectedRoute><Stage /></ProtectedRoute>} />
-          <Route path="/duel/:duelId/round/:roundNum/winner" element={<ProtectedRoute><RoundWinner /></ProtectedRoute>} />
-          <Route path="/duel/:duelId/champion" element={<ProtectedRoute><Champion /></ProtectedRoute>} />
+          {/* All in-duel pages share ONE socket via DuelLayout — see DuelLayout.jsx */}
+          <Route element={<DuelLayout />}>
+            <Route path="/lobby/:duelId" element={<Lobby />} />
+            <Route path="/duel/:duelId/round/:roundNum" element={<Faceoff />} />
+            <Route path="/duel/:duelId/round/:roundNum/stage" element={<Stage />} />
+            <Route path="/duel/:duelId/round/:roundNum/winner" element={<RoundWinner />} />
+            <Route path="/duel/:duelId/champion" element={<Champion />} />
+          </Route>
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>

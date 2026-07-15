@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import AppNav from '../components/AppNav'
 import { useAuth } from '../context/AuthContext'
-import { useGameSocket } from '../hooks/useGameSocket'
+import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
 const COLOR_BG = {
   'neon-blue': 'bg-neon-blue/20',
@@ -149,7 +149,8 @@ function Stage() {
     }
   }, [player1, player2, track1, track2, trackHistory, roundLabel, duelId, roundNum, allPlayers, navigate])
 
-  const { send } = useGameSocket(duelId, handleGameEvent)
+  const { send } = useDuelSocket()
+  useDuelEvents(handleGameEvent)
 
   // Intro → playing transition
   useEffect(() => {

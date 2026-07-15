@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import AppNav from '../components/AppNav'
-import { useGameSocket } from '../hooks/useGameSocket'
+import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
 const COLOR_BG = {
   'neon-blue': 'bg-neon-blue/20',
@@ -128,7 +128,8 @@ function Champion() {
     }
   }, [navigate])
 
-  const { send, isConnected } = useGameSocket(duelId, handleGameEvent)
+  const { send, isConnected } = useDuelSocket()
+  useDuelEvents(handleGameEvent)
 
   useEffect(() => {
     if (!champion) navigate('/', { replace: true })
