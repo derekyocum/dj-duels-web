@@ -11,7 +11,3 @@ phases:
     commands:
       - npm run lint
       - npm run build
-  post_build:
-    commands:
-      - aws s3 sync dist/ s3://$S3_BUCKET/ --delete
-      - aws cloudfront create-invalidation --distribution-id $CF_DISTRIBUTION_ID --paths "/*"
