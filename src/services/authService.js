@@ -1,14 +1,33 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 const USER_KEY = 'dj_duels_user'
 
+function friendlyError(status) {
+  if (status === 429) return 'Too many attempts — please wait a moment and try again.'
+  if (status === 401) return 'Session expired. Please log in again.'
+  if (status === 403) return 'Access denied.'
+  if (status >= 500) return 'Server error — please try again in a moment.'
+  return `Unexpected error (${status}).`
+}
+
 async function post(path, body) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  let res
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new Error('Cannot reach the server — check your connection.')
+  }
+
+  const isJson = res.headers.get('content-type')?.includes('application/json')
+  if (!isJson) {
+    throw new Error(friendlyError(res.status))
+  }
+
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Request failed')
+  if (!res.ok) throw new Error(data.error || friendlyError(res.status))
   return data
 }
 
