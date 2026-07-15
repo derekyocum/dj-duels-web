@@ -1,23 +1,17 @@
 version: 0.2
 
 phases:
+  install:
+    runtime-versions:
+      nodejs: 22
   pre_build:
     commands:
-      - echo "Logging in to ECR..."
-      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - ECR_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/dj-duels-web
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)
+      - npm install
   build:
     commands:
-      - echo "Building and linting via Docker..."
-      - docker build -t $ECR_URI:$IMAGE_TAG -t $ECR_URI:latest .
-      - docker push $ECR_URI:$IMAGE_TAG
-      - docker push $ECR_URI:latest
+      - npm run lint
+      - npm run build
   post_build:
     commands:
-      - printf '[{"name":"web","imageUri":"%s"}]' $ECR_URI:$IMAGE_TAG > imagedefinitions.json
-
-artifacts:
-  files:
-    - imagedefinitions.json
+      - aws s3 sync dist/ s3://$S3_BUCKET/ --delete
+      - aws cloudfront create-invalidation --distribution-id $CF_DISTRIBUTION_ID --paths "/*"

@@ -1,7 +1,18 @@
-const API_BASE = 'http://localhost:8080'
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+
+const authHeaders = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('dj_duels_user') || '{}')
+    return user.accessToken ? { Authorization: `Bearer ${user.accessToken}` } : {}
+  } catch {
+    return {}
+  }
+}
 
 export async function fetchSpotifyTrack(url) {
-  const response = await fetch(`${API_BASE}/api/tracks/spotify?url=${encodeURIComponent(url)}`)
+  const response = await fetch(`${API_BASE}/api/tracks/spotify?url=${encodeURIComponent(url)}`, {
+    headers: authHeaders(),
+  })
   const data = await response.json()
 
   if (!response.ok) {
@@ -12,7 +23,9 @@ export async function fetchSpotifyTrack(url) {
 }
 
 export async function fetchYouTubeTrack(url) {
-  const response = await fetch(`${API_BASE}/api/tracks/youtube?url=${encodeURIComponent(url)}`)
+  const response = await fetch(`${API_BASE}/api/tracks/youtube?url=${encodeURIComponent(url)}`, {
+    headers: authHeaders(),
+  })
   const data = await response.json()
 
   if (!response.ok) {
