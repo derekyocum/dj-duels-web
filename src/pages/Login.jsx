@@ -9,6 +9,7 @@ function Login() {
   const location = useLocation()
   const from = location.state?.from || '/'
   const justConfirmed = location.state?.confirmed === true
+  const justReset = location.state?.passwordReset === true
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -56,6 +57,11 @@ function Login() {
               <p className="text-neon-green text-sm font-medium">Account confirmed — you're good to go!</p>
             </div>
           )}
+          {justReset && (
+            <div className="bg-neon-green/10 border border-neon-green/20 rounded-xl px-4 py-3 mb-4">
+              <p className="text-neon-green text-sm font-medium">Password reset — sign in with your new password.</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -73,9 +79,10 @@ function Login() {
             </div>
 
             <div>
-              <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-1.5">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider">Password</label>
+                <Link to="/forgot-password" className="text-xs text-neon-blue hover:text-neon-blue/80 transition-colors">Forgot password?</Link>
+              </div>
               <input
                 type="password"
                 value={password}

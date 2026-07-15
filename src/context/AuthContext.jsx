@@ -16,8 +16,8 @@ export function AuthProvider({ children }) {
     return u
   }, [])
 
-  const logout = useCallback(() => {
-    authLogout()
+  const logout = useCallback(async () => {
+    await authLogout()
     setUser(null)
   }, [])
 

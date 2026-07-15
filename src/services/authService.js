@@ -31,6 +31,15 @@ async function post(path, body) {
   return data
 }
 
+export async function forgotPassword(username) {
+  if (!username) throw new Error('Username is required')
+  await post('/api/auth/forgot-password', { username })
+}
+
+export async function resetPassword(username, code, newPassword) {
+  await post('/api/auth/reset-password', { username, code, newPassword })
+}
+
 export async function signup(username, email, password) {
   if (!username || !email || !password) throw new Error('All fields are required')
   if (password.length < 8) throw new Error('Password must be at least 8 characters')
@@ -49,7 +58,16 @@ export async function login(username, password) {
   return user
 }
 
-export function logout() {
+export async function logout() {
+  const user = getCurrentUser()
+  if (user?.accessToken) {
+    try {
+      await fetch(`${API_BASE}/api/auth/signout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      })
+    } catch { /* best effort — clear locally regardless */ }
+  }
   localStorage.removeItem(USER_KEY)
 }
 

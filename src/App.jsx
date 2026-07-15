@@ -10,6 +10,7 @@ import Stage from './pages/Stage'
 import RoundWinner from './pages/RoundWinner'
 import Champion from './pages/Champion'
 import Profile from './pages/Profile'
+import ForgotPassword from './pages/ForgotPassword'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/lobby/:duelId" element={<ProtectedRoute><Lobby /></ProtectedRoute>} />
           <Route path="/duel/:duelId/round/:roundNum" element={<ProtectedRoute><Faceoff /></ProtectedRoute>} />
           <Route path="/duel/:duelId/round/:roundNum/stage" element={<ProtectedRoute><Stage /></ProtectedRoute>} />
