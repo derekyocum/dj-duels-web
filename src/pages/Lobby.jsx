@@ -27,21 +27,28 @@ const PLATFORMS = [
 function Lobby() {
   const { duelId } = useParams()
   const [searchParams] = useSearchParams()
-  const isHost = searchParams.get('host') === 'true'
+  const urlClaimsHost = searchParams.get('host') === 'true'
   const urlMaxPlayers = parseInt(searchParams.get('players') || '2', 10)
   const [maxPlayers, setMaxPlayers] = useState(urlMaxPlayers)
   const { user } = useAuth()
   const navigate = useNavigate()
 
   const [players, setPlayers] = useState(() => [{
-    name: user?.username ?? (isHost ? 'You (Host)' : 'You'),
+    name: user?.username ?? (urlClaimsHost ? 'You (Host)' : 'You'),
     color: PLAYER_COLORS[0],
-    isHost,
+    isHost: urlClaimsHost,
   }])
   const [copied, setCopied] = useState(false)
   const [connectedPlatforms, setConnectedPlatforms] = useState({})
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
+
+  // The server is the source of truth for who's host (it falls back to "first
+  // joiner" when nobody's ?host=true link claims it — see GameSession.addPlayer).
+  // Trust the roster once we have it; the URL flag is only an optimistic guess
+  // for the very first render, before any PLAYER_JOINED has arrived.
+  const me = players.find((p) => p.name === user?.username)
+  const isHost = me ? me.isHost : urlClaimsHost
 
   const handleGameEvent = useCallback((event) => {
     switch (event.type) {
@@ -78,12 +85,14 @@ function Lobby() {
   const { send, isConnected } = useDuelSocket()
   useDuelEvents(handleGameEvent)
 
-  // Send join message as soon as the socket is connected
+  // Send join message as soon as the socket is connected. Send the URL's host
+  // claim, not the (possibly server-corrected) derived `isHost` — this message
+  // IS the claim; the server decides who actually becomes host.
   useEffect(() => {
     if (isConnected) {
-      send('lobby/join', { duelId, username: user?.username, isHost, maxPlayers: urlMaxPlayers })
+      send('lobby/join', { duelId, username: user?.username, isHost: urlClaimsHost, maxPlayers: urlMaxPlayers })
     }
-  }, [isConnected, send, duelId, user?.username, isHost, urlMaxPlayers])
+  }, [isConnected, send, duelId, user?.username, urlClaimsHost, urlMaxPlayers])
 
   const lobbyLink = `${window.location.origin}/lobby/${duelId}?players=${maxPlayers}`
 
@@ -172,7 +181,7 @@ function Lobby() {
         )}
 
         <div className="mb-10 w-full max-w-md">
-          <LobbyStatus currentCount={players.length} maxCount={maxPlayers} onStartDuel={handleStartDuel} />
+          <LobbyStatus currentCount={players.length} maxCount={maxPlayers} isHost={isHost} onStartDuel={handleStartDuel} />
         </div>
 
         <div className="flex flex-wrap justify-center gap-4 w-full max-w-2xl mb-10">
