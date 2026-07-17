@@ -86,6 +86,7 @@ function Stage() {
   const [vote, setVote] = useState(null)
   const [trackTimeLeft, setTrackTimeLeft] = useState(TRACK_SECONDS)
   const [songStopped, setSongStopped] = useState(false)
+  const [skipRequested, setSkipRequested] = useState(false)
   // songIndex -> { up, down, voterCount, totalPlayers, voters[] }
   const [serverSongVotes, setServerSongVotes] = useState({})
   // Server-authoritative end timestamp for the current song; syncs all clients
@@ -133,6 +134,7 @@ function Stage() {
         setVote(null)
         setTrackTimeLeft(TRACK_SECONDS)
         setSongStopped(false)
+        setSkipRequested(false)
         setPhase('intro')
         setTimeout(() => setPhase('playing'), 1500)
         break
@@ -205,6 +207,12 @@ function Stage() {
     if (vote) return
     setVote(direction)
     send('round/vote', { duelId, voterUsername: user?.username, songIndex: currentTrackIndex, vote: direction })
+  }
+
+  function handleSkip() {
+    if (skipRequested) return
+    setSkipRequested(true)
+    send('round/skip', { duelId })
   }
 
   const color = current?.player?.color || 'neon-blue'
@@ -361,11 +369,23 @@ function Stage() {
 
                 {/* Voter progress */}
                 {vote && votesRemaining !== null && (
-                  <p className="text-text-muted text-xs text-center">
-                    {votesRemaining > 0
-                      ? `Waiting for ${votesRemaining} more vote${votesRemaining !== 1 ? 's' : ''}...`
-                      : 'All votes in!'}
-                  </p>
+                  <div className="flex flex-col items-center gap-2.5">
+                    <p className="text-text-muted text-xs text-center">
+                      {votesRemaining > 0
+                        ? `Waiting for ${votesRemaining} more vote${votesRemaining !== 1 ? 's' : ''}...`
+                        : 'All votes in!'}
+                    </p>
+                    {votesRemaining === 0 && !songStopped && (
+                      <button
+                        onClick={handleSkip}
+                        disabled={skipRequested}
+                        className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {skipRequested ? 'Skipping...' : 'Skip to Next'}
+                        <span>⏭</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
