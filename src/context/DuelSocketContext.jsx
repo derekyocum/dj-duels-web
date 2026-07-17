@@ -76,8 +76,17 @@ export function DuelSocketProvider({ duelId, children }) {
       onDisconnect: () => setIsConnected(false),
       onWebSocketClose: () => setIsConnected(false),
       onStompError: (frame) => {
-        console.error('STOMP error', frame)
         setIsConnected(false)
+        // The server rejects a bad/expired token by CLOSING the socket with an
+        // ERROR frame, which would otherwise reconnect-loop forever. Stop, and
+        // signal the app to send the user to log in again.
+        const reason = frame?.headers?.message || ''
+        if (/token|authoriz/i.test(reason)) {
+          client.deactivate()
+          dispatchEvent({ type: 'AUTH_EXPIRED' })
+          return
+        }
+        console.error('STOMP error', frame)
       },
     })
 

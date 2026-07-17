@@ -10,6 +10,7 @@ function Login() {
   const from = location.state?.from || '/'
   const justConfirmed = location.state?.confirmed === true
   const justReset = location.state?.passwordReset === true
+  const sessionExpired = location.state?.sessionExpired === true
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -60,6 +61,11 @@ function Login() {
           {justReset && (
             <div className="bg-neon-green/10 border border-neon-green/20 rounded-xl px-4 py-3 mb-4">
               <p className="text-neon-green text-sm font-medium">Password reset — sign in with your new password.</p>
+            </div>
+          )}
+          {sessionExpired && (
+            <div className="bg-neon-yellow/10 border border-neon-yellow/20 rounded-xl px-4 py-3 mb-4">
+              <p className="text-neon-yellow text-sm font-medium">Your session expired — please sign in again.</p>
             </div>
           )}
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router'
 import { useDuelEvents } from '../context/DuelSocketContext'
+import { useAuth } from '../context/AuthContext'
 
 // Map a server STATE_SNAPSHOT to the page + props that render the current phase.
 // The snapshot feeds the same shape each page already reads from location.state,
@@ -54,12 +55,24 @@ function routeForSnapshot(snap, duelId) {
 function DuelResync({ duelId }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { logout } = useAuth()
   const locRef = useRef(location)
   useEffect(() => {
     locRef.current = location
   })
 
   useDuelEvents((event) => {
+    // Token expired/invalid: the socket gave up. Navigate to login FIRST so this
+    // route's ProtectedRoute unmounts before logout() flips isAuthenticated to
+    // false — otherwise ProtectedRoute's own redirect (state: {from}) races ours
+    // and wins, clobbering the sessionExpired banner. Clearing the session after
+    // navigating is still safe: AuthProvider lives above the router and isn't
+    // unmounted by this navigation.
+    if (event.type === 'AUTH_EXPIRED') {
+      navigate('/login', { replace: true, state: { sessionExpired: true } })
+      logout()
+      return
+    }
     if (event.type !== 'STATE_SNAPSHOT') return
     const target = routeForSnapshot(event.payload, duelId)
     if (!target) return
