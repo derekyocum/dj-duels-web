@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-midnight: #0a0a1a;
-  --color-deep-purple: #1a0a2e;
-  --color-dark-surface: #12121f;
-  --color-card: #1c1c2e;
-  --color-card-hover: #252540;
+  /* 2.0 "Vivid Dark": near-black canvas so the neons read as light sources */
+  --color-midnight: #060609;
+  --color-deep-purple: #140a24;
+  --color-dark-surface: #0d0d15;
+  --color-card: #121220;
+  --color-card-hover: #1b1b2c;
 
   --color-neon-pink: #ff2d95;
   --color-neon-blue: #00d4ff;
@@ -13,7 +14,7 @@
   --color-neon-green: #39ff14;
   --color-neon-yellow: #fff01f;
 
-  --color-text-primary: #f0eef5;
+  --color-text-primary: #f4f2f9;
   --color-text-secondary: #9b95a8;
   --color-text-muted: #6b6375;
 
@@ -26,6 +27,7 @@ body {
   background-color: var(--color-midnight);
   color: var(--color-text-primary);
   min-height: 100svh;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
@@ -34,23 +36,51 @@ body {
   flex-direction: column;
 }
 
+/* ── Glassmorphism panel: low-alpha white over black + blur + hairline edge ── */
+@utility glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 10px 40px -12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+@utility glass-hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Film grain overlay for premium club texture (self-contained SVG noise) */
+@utility grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-20px) rotate(5deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(-3deg);
-  }
-  75% {
-    transform: translateY(-25px) rotate(4deg);
-  }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-20px) rotate(5deg); }
+  50% { transform: translateY(-8px) rotate(-3deg); }
+  75% { transform: translateY(-25px) rotate(4deg); }
 }
 
 @utility animate-float {
   animation: float 20s ease-in-out infinite;
+}
+
+/* Ambient "alive" glow — animates opacity only (compositor-cheap, no re-blur) */
+@keyframes breathe {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+@utility animate-breathe {
+  animation: breathe 12s ease-in-out infinite;
+}
+
+@utility animate-breathe-slow {
+  animation: breathe 18s ease-in-out infinite;
 }
 
 @keyframes pulse-border {
@@ -71,3 +101,12 @@ body {
   animation: glow-pulse 1.5s ease-in-out infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-breathe,
+  .animate-breathe-slow,
+  .animate-glow-pulse,
+  .animate-pulse-border {
+    animation: none;
+  }
+}

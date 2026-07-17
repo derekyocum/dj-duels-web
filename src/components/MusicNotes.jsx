@@ -18,7 +18,7 @@ function seededRandom(seed) {
 const NOTES = (() => {
   const rand = seededRandom(42)
   const notes = []
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 28; i++) {
     notes.push({
       symbol: Math.floor(rand() * SYMBOLS.length),
       top: `${(rand() * 90 + 2).toFixed(1)}%`,
@@ -39,7 +39,10 @@ function MusicNotes() {
   const [glowLevels, setGlowLevels] = useState(() => new Array(NOTES.length).fill(0))
 
   useEffect(() => {
-    function updateGlow() {
+    let scheduled = false
+
+    function computeGlow() {
+      scheduled = false
       const { x, y } = mouseRef.current
       const levels = noteRefs.current.map((el) => {
         if (!el) return 0
@@ -51,19 +54,28 @@ function MusicNotes() {
         return 1 - dist / GLOW_RADIUS
       })
       setGlowLevels(levels)
-      rafRef.current = requestAnimationFrame(updateGlow)
+    }
+
+    // Recompute only in response to actual movement, coalesced to one pass per
+    // frame — NOT a perpetual rAF loop (that re-rendered 60 nodes every frame
+    // forever, pegging the main thread and starving scroll/paint).
+    function schedule() {
+      if (scheduled) return
+      scheduled = true
+      rafRef.current = requestAnimationFrame(computeGlow)
     }
 
     const handleMouseMove = (e) => {
       mouseRef.current = { x: e.clientX, y: e.clientY }
+      schedule()
     }
     const handleMouseLeave = () => {
       mouseRef.current = { x: -9999, y: -9999 }
+      schedule()
     }
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
     document.addEventListener('mouseleave', handleMouseLeave)
-    rafRef.current = requestAnimationFrame(updateGlow)
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
@@ -89,7 +101,6 @@ function MusicNotes() {
               left: note.left,
               animationDuration: note.duration,
               animationDelay: note.delay,
-              willChange: 'transform',
               color,
               opacity,
               filter: glow > 0 ? `drop-shadow(0 0 ${12 + glow * 28}px ${note.color}) drop-shadow(0 0 ${4 + glow * 8}px ${note.color})` : 'none',

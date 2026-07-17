@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
-import MusicNotes from '../components/MusicNotes'
+import AppBackground from '../components/AppBackground'
 import { useAuth } from '../context/AuthContext'
+
+const inputClass = "w-full bg-black/30 border border-white/10 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue/70 focus:ring-2 focus:ring-neon-blue/25 focus:outline-none transition-colors"
+const labelClass = "block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-1.5"
 
 function Login() {
   const { login } = useAuth()
@@ -32,14 +35,8 @@ function Login() {
   }
 
   return (
-    <div className="relative min-h-svh flex flex-col items-center justify-center bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight px-6">
-      <MusicNotes />
-
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-neon-blue/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[400px] bg-neon-purple/6 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[400px] bg-neon-blue/8 rounded-full blur-[100px]" />
-      </div>
+    <div className="relative min-h-svh flex flex-col items-center justify-center px-6">
+      <AppBackground />
 
       <div className="relative z-10 w-full max-w-sm">
         <a href="/" className="flex items-center justify-center gap-2 no-underline mb-10">
@@ -49,13 +46,13 @@ function Login() {
           </span>
         </a>
 
-        <div className="bg-card/60 border border-text-muted/15 rounded-2xl p-8 backdrop-blur-sm">
+        <div className="glass rounded-2xl p-8">
           <h1 className="text-2xl font-bold text-text-primary mb-1">Welcome back</h1>
           <p className="text-text-secondary text-sm mb-4">Sign in to your account</p>
 
           {justConfirmed && (
             <div className="bg-neon-green/10 border border-neon-green/20 rounded-xl px-4 py-3 mb-4">
-              <p className="text-neon-green text-sm font-medium">Account confirmed — you're good to go!</p>
+              <p className="text-neon-green text-sm font-medium">Account confirmed — you&apos;re good to go!</p>
             </div>
           )}
           {justReset && (
@@ -71,16 +68,14 @@ function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-1.5">
-                Username
-              </label>
+              <label className={labelClass}>Username</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="DJFire99"
                 required
-                className="w-full bg-midnight/80 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
+                className={inputClass}
               />
             </div>
 
@@ -95,7 +90,7 @@ function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full bg-midnight/80 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
+                className={inputClass}
               />
             </div>
 
@@ -108,7 +103,7 @@ function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,212,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-6px_rgba(0,212,255,0.5)] transition-all duration-300 cursor-pointer hover:shadow-[0_0_40px_-4px_rgba(0,212,255,0.7)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none mt-2"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -116,7 +111,7 @@ function Login() {
         </div>
 
         <p className="text-center text-text-secondary text-sm mt-4">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link to="/signup" state={{ from }} className="text-neon-blue hover:text-neon-blue/80 font-semibold transition-colors">
             Sign up
           </Link>
