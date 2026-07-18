@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 const SYMBOLS = ['♪', '♫', '♬', '🎵', '🎶', '🎤', '🎧', '🎹', '🎸']
-const NEON_COLORS = ['#00d4ff', '#ff2d95', '#b347ff', '#39ff14', '#fff01f']
+const NEON_COLORS = ['#0080ff', '#ff2d95', '#8b2fe8', '#39ff14', '#fff01f']
 const GREY = '#6b6375'
 const GLOW_RADIUS = 200
 

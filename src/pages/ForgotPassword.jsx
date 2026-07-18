@@ -79,7 +79,7 @@ function ForgotPassword() {
               )}
 
               <button type="submit" disabled={loading}
-                className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,212,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2">
+                className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2">
                 {loading ? 'Sending code...' : 'Send Reset Code'}
               </button>
             </form>
@@ -119,7 +119,7 @@ function ForgotPassword() {
               )}
 
               <button type="submit" disabled={loading}
-                className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,212,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2">
+                className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2">
                 {loading ? 'Resetting...' : 'Reset Password'}
               </button>
 

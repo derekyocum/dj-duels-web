@@ -6,7 +6,7 @@ function CountdownTimer({ timeLeft, totalTime }) {
 
   let colorClass = 'text-neon-blue'
   let barColor = 'from-neon-blue to-neon-purple'
-  let glowColor = 'shadow-[0_0_20px_rgba(0,212,255,0.3)]'
+  let glowColor = 'shadow-[0_0_20px_rgba(0,128,255,0.3)]'
 
   if (timeLeft <= 15) {
     colorClass = 'text-neon-pink'

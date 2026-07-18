@@ -111,7 +111,7 @@ function Profile() {
 
           {/* Avatar + name */}
           <div className="flex flex-col items-center mb-10">
-            <div className="w-24 h-24 rounded-full bg-neon-blue/20 border-2 border-neon-blue/50 shadow-[0_0_40px_rgba(0,212,255,0.2)] flex items-center justify-center mb-4">
+            <div className="w-24 h-24 rounded-full bg-neon-blue/20 border-2 border-neon-blue/50 shadow-[0_0_40px_rgba(0,128,255,0.2)] flex items-center justify-center mb-4">
               <span className="text-neon-blue font-black text-4xl">{initial}</span>
             </div>
             <h1 className="text-2xl font-bold text-text-primary">{user?.username}</h1>

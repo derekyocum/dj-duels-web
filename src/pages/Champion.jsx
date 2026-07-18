@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
+import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
 const COLOR_BG = {
@@ -28,7 +29,7 @@ const COLOR_TEXT = {
   'neon-yellow': 'text-neon-yellow',
 }
 
-const FIREWORK_COLORS = ['#00D4FF', '#B347FF', '#FF2D95', '#39FF14', '#FFE01F']
+const FIREWORK_COLORS = ['#0080FF', '#8B2FE8', '#FF2D95', '#39FF14', '#FFE01F']
 
 function Fireworks() {
   const particles = useMemo(() =>
@@ -91,8 +92,13 @@ function Champion() {
   const { duelId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const { champion, trackHistory = {} } = location.state ?? {}
+  const { user } = useAuth()
+  const { champion, trackHistory = {}, allPlayers = [] } = location.state ?? {}
   const tracks = trackHistory[champion?.name] || []
+  // Server-authoritative host flag, same pattern as Lobby -- only the host can
+  // start a rematch (server enforces this too; hiding the button for everyone
+  // else avoids a click that silently no-ops).
+  const isHost = allPlayers.find((p) => p.name === user?.username)?.isHost ?? false
 
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [closeAt, setCloseAt] = useState(null)
@@ -125,11 +131,17 @@ function Champion() {
       setCloseAt(event.payload.closeAt)
     } else if (event.type === 'SESSION_CLOSED' || event.type === 'SESSION_EXPIRED') {
       navigate('/')
+    } else if (event.type === 'REMATCH') {
+      navigate(`/lobby/${duelId}`)
     }
-  }, [navigate])
+  }, [navigate, duelId])
 
   const { send, isConnected } = useDuelSocket()
   useDuelEvents(handleGameEvent)
+
+  const handlePlayAgain = useCallback(() => {
+    send('game/play-again', { duelId })
+  }, [send, duelId])
 
   useEffect(() => {
     if (!champion) navigate('/', { replace: true })
@@ -171,7 +183,7 @@ function Champion() {
         </div>
 
         <div className="mt-8 mb-6">
-          <div className={`w-28 h-28 rounded-full ${bg} border-4 ${border} shadow-[0_0_60px_rgba(0,212,255,0.3)] flex items-center justify-center mx-auto`}>
+          <div className={`w-28 h-28 rounded-full ${bg} border-4 ${border} shadow-[0_0_60px_rgba(0,128,255,0.3)] flex items-center justify-center mx-auto`}>
             <span className={`${text} font-bold text-5xl`}>{champion?.name?.charAt(0)}</span>
           </div>
           <p className="text-text-primary font-bold text-2xl text-center mt-4">{champion?.name}</p>
@@ -220,12 +232,27 @@ function Champion() {
           </div>
         )}
 
-        <button
-          onClick={() => navigate('/')}
-          className="mt-10 px-8 py-3 text-base font-bold rounded-full border-2 border-neon-blue/40 text-neon-blue hover:bg-neon-blue/10 transition-all duration-300 cursor-pointer"
-        >
-          Back to Home
-        </button>
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            {isHost && (
+              <button
+                onClick={handlePlayAgain}
+                className="px-8 py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-6px_rgba(0,128,255,0.5)] hover:shadow-[0_0_40px_-4px_rgba(0,128,255,0.7)] transition-all duration-300 cursor-pointer"
+              >
+                Play Again
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/')}
+              className="px-8 py-3 text-base font-bold rounded-full border-2 border-neon-blue/40 text-neon-blue hover:bg-neon-blue/10 transition-all duration-300 cursor-pointer"
+            >
+              Back to Home
+            </button>
+          </div>
+          {!isHost && (
+            <p className="text-text-muted text-xs">Waiting for the host to start a rematch...</p>
+          )}
+        </div>
       </main>
 
       <footer className="relative z-10 text-center py-6 text-text-muted text-xs">

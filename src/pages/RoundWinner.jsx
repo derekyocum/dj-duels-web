@@ -28,9 +28,9 @@ const COLOR_TEXT = {
 }
 
 const COLOR_GLOW = {
-  'neon-blue': 'shadow-[0_0_50px_rgba(0,212,255,0.3)]',
+  'neon-blue': 'shadow-[0_0_50px_rgba(0,128,255,0.3)]',
   'neon-pink': 'shadow-[0_0_50px_rgba(255,45,149,0.3)]',
-  'neon-purple': 'shadow-[0_0_50px_rgba(179,71,255,0.3)]',
+  'neon-purple': 'shadow-[0_0_50px_rgba(139,47,232,0.3)]',
   'neon-green': 'shadow-[0_0_50px_rgba(57,255,20,0.3)]',
   'neon-yellow': 'shadow-[0_0_50px_rgba(255,240,31,0.3)]',
 }
@@ -138,7 +138,7 @@ function RoundWinner() {
         {revealed && (
           <button
             onClick={handleNextRound}
-            className="mt-12 px-8 py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white hover:shadow-[0_0_30px_rgba(0,212,255,0.3)] transition-all duration-300 cursor-pointer"
+            className="mt-12 px-8 py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white hover:shadow-[0_0_30px_rgba(0,128,255,0.3)] transition-all duration-300 cursor-pointer"
           >
             {location.state?.nextAction === 'champion' ? 'See Champion' : 'Next Round'}
           </button>

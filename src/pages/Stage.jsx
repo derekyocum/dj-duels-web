@@ -31,9 +31,9 @@ const COLOR_TEXT = {
 }
 
 const COLOR_GLOW = {
-  'neon-blue': 'shadow-[0_0_40px_rgba(0,212,255,0.25)]',
+  'neon-blue': 'shadow-[0_0_40px_rgba(0,128,255,0.25)]',
   'neon-pink': 'shadow-[0_0_40px_rgba(255,45,149,0.25)]',
-  'neon-purple': 'shadow-[0_0_40px_rgba(179,71,255,0.25)]',
+  'neon-purple': 'shadow-[0_0_40px_rgba(139,47,232,0.25)]',
   'neon-green': 'shadow-[0_0_40px_rgba(57,255,20,0.25)]',
   'neon-yellow': 'shadow-[0_0_40px_rgba(255,240,31,0.25)]',
 }
@@ -256,9 +256,9 @@ function Stage() {
         className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${phase === 'playing' ? 'opacity-100' : 'opacity-30'}`}
         style={{
           background:
-            'radial-gradient(55% 40% at 50% -6%, rgba(0,212,255,0.14), transparent 60%),' +
-            'radial-gradient(40% 32% at 6% 100%, rgba(179,71,255,0.10), transparent 62%),' +
-            'radial-gradient(40% 32% at 96% 104%, rgba(0,212,255,0.10), transparent 62%)',
+            'radial-gradient(55% 40% at 50% -6%, rgba(0,128,255,0.14), transparent 60%),' +
+            'radial-gradient(40% 32% at 6% 100%, rgba(139,47,232,0.10), transparent 62%),' +
+            'radial-gradient(40% 32% at 96% 104%, rgba(0,128,255,0.10), transparent 62%)',
         }}
       />
 

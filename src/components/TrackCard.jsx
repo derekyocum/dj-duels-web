@@ -15,9 +15,9 @@ const COLOR_BORDER = {
 }
 
 const COLOR_GLOW = {
-  'neon-blue': 'shadow-[0_0_30px_rgba(0,212,255,0.2)]',
+  'neon-blue': 'shadow-[0_0_30px_rgba(0,128,255,0.2)]',
   'neon-pink': 'shadow-[0_0_30px_rgba(255,45,149,0.2)]',
-  'neon-purple': 'shadow-[0_0_30px_rgba(179,71,255,0.2)]',
+  'neon-purple': 'shadow-[0_0_30px_rgba(139,47,232,0.2)]',
   'neon-green': 'shadow-[0_0_30px_rgba(57,255,20,0.2)]',
   'neon-yellow': 'shadow-[0_0_30px_rgba(255,240,31,0.2)]',
 }

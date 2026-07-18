@@ -70,7 +70,7 @@ function Landing() {
         <div className="relative mb-6">
           <div
             className="absolute inset-0 -z-10 blur-[60px] opacity-60"
-            style={{ background: 'radial-gradient(60% 60% at 50% 50%, rgba(0,212,255,0.35), rgba(179,71,255,0.25) 45%, transparent 70%)' }}
+            style={{ background: 'radial-gradient(60% 60% at 50% 50%, rgba(0,128,255,0.35), rgba(139,47,232,0.25) 45%, transparent 70%)' }}
           />
           <h1 className="text-6xl md:text-8xl font-black tracking-[-0.03em] leading-[0.95] max-w-3xl">
             <span className="bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink bg-clip-text text-transparent">
@@ -87,7 +87,7 @@ function Landing() {
         <div className="flex flex-col sm:flex-row gap-4">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="group relative px-8 py-3.5 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-4px_rgba(0,212,255,0.5)] hover:shadow-[0_0_45px_-2px_rgba(0,212,255,0.7)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            className="group relative px-8 py-3.5 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-4px_rgba(0,128,255,0.5)] hover:shadow-[0_0_45px_-2px_rgba(0,128,255,0.7)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
             Create a Duel
           </button>

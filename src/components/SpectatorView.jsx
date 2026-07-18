@@ -1,9 +1,9 @@
 import CountdownTimer from './CountdownTimer'
 
 const COLOR_GLOW = {
-  'neon-blue': 'shadow-[0_0_25px_rgba(0,212,255,0.3)]',
+  'neon-blue': 'shadow-[0_0_25px_rgba(0,128,255,0.3)]',
   'neon-pink': 'shadow-[0_0_25px_rgba(255,45,149,0.3)]',
-  'neon-purple': 'shadow-[0_0_25px_rgba(179,71,255,0.3)]',
+  'neon-purple': 'shadow-[0_0_25px_rgba(139,47,232,0.3)]',
   'neon-green': 'shadow-[0_0_25px_rgba(57,255,20,0.3)]',
   'neon-yellow': 'shadow-[0_0_25px_rgba(255,240,31,0.3)]',
 }

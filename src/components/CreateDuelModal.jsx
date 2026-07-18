@@ -77,7 +77,7 @@ function CreateDuelModal({ isOpen, onClose }) {
                   onClick={() => setPlayerCount(n)}
                   className={`py-3 rounded-xl font-semibold text-lg transition-all duration-200 cursor-pointer ${
                     playerCount === n
-                      ? 'bg-neon-blue/20 text-neon-blue border-2 border-neon-blue/50 shadow-[0_0_15px_rgba(0,212,255,0.2)]'
+                      ? 'bg-neon-blue/20 text-neon-blue border-2 border-neon-blue/50 shadow-[0_0_15px_rgba(0,128,255,0.2)]'
                       : 'bg-card hover:bg-card-hover text-text-secondary border-2 border-transparent'
                   }`}
                 >
@@ -110,7 +110,7 @@ function CreateDuelModal({ isOpen, onClose }) {
             </div>
             <button
               onClick={handleGoToLobby}
-              className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,212,255,0.3)]"
+              className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)]"
             >
               Go to Lobby
             </button>

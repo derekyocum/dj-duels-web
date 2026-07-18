@@ -5,7 +5,7 @@ const PLATFORM_ICONS = { spotify: SpotifyIcon, youtube: YouTubeIcon, apple: Appl
 const PLATFORM_STYLES = {
   spotify: { border: 'border-[#1DB954]/30', bg: 'bg-[#1DB954]/15', text: 'text-[#1DB954]', activeBg: 'bg-[#1DB954]/25', iconColor: '#1DB954' },
   youtube: { border: 'border-[#FF0000]/30', bg: 'bg-[#FF0000]/15', text: 'text-[#FF0000]', activeBg: 'bg-[#FF0000]/25', iconColor: '#FF0000' },
-  apple: { border: 'border-neon-blue/30', bg: 'bg-neon-blue/15', text: 'text-neon-blue', activeBg: 'bg-neon-blue/25', iconColor: '#00d4ff' },
+  apple: { border: 'border-neon-blue/30', bg: 'bg-neon-blue/15', text: 'text-neon-blue', activeBg: 'bg-neon-blue/25', iconColor: '#0080ff' },
 }
 
 function PlatformButton({ name, platform, connected, accountDisplayName, comingSoon, connecting, onConnect, onDisconnect }) {

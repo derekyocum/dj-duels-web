@@ -19,10 +19,10 @@ function AppBackground() {
           className="absolute inset-0 animate-breathe"
           style={{
             background:
-              'radial-gradient(60% 40% at 50% -6%, rgba(0,212,255,0.22), transparent 60%),' +
-              'radial-gradient(42% 32% at 6% 100%, rgba(179,71,255,0.18), transparent 62%),' +
+              'radial-gradient(60% 40% at 50% -6%, rgba(0,128,255,0.22), transparent 60%),' +
+              'radial-gradient(42% 32% at 6% 100%, rgba(139,47,232,0.18), transparent 62%),' +
               'radial-gradient(42% 32% at 96% 104%, rgba(255,45,149,0.15), transparent 62%),' +
-              'radial-gradient(30% 24% at 82% 12%, rgba(0,212,255,0.10), transparent 60%)',
+              'radial-gradient(30% 24% at 82% 12%, rgba(0,128,255,0.10), transparent 60%)',
           }}
         />
 

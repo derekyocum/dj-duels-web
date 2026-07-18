@@ -103,7 +103,7 @@ function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-6px_rgba(0,212,255,0.5)] transition-all duration-300 cursor-pointer hover:shadow-[0_0_40px_-4px_rgba(0,212,255,0.7)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none mt-2"
+              className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-6px_rgba(0,128,255,0.5)] transition-all duration-300 cursor-pointer hover:shadow-[0_0_40px_-4px_rgba(0,128,255,0.7)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none mt-2"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>

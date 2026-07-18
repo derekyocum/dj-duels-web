@@ -125,7 +125,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, onLockIn 
         disabled={!trackInfo}
         className={`w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 ${
           trackInfo
-            ? 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,212,255,0.3)]'
+            ? 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)]'
             : 'opacity-40 cursor-not-allowed'
         }`}
       >
