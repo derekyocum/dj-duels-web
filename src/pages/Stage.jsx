@@ -89,6 +89,8 @@ function Stage() {
   const [skipRequested, setSkipRequested] = useState(false)
   // songIndex -> { up, down, voterCount, totalPlayers, voters[] }
   const [serverSongVotes, setServerSongVotes] = useState({})
+  // songIndex -> { requestedCount, totalPlayers } -- skip needs everyone's agreement
+  const [serverSkipRequests, setServerSkipRequests] = useState({})
   // Server-authoritative end timestamp for the current song; syncs all clients
   const [songEndsAt, setSongEndsAt] = useState(location.state?.songEndsAt ?? null)
 
@@ -124,6 +126,14 @@ function Stage() {
         setServerSongVotes((prev) => ({
           ...prev,
           [songIndex]: { up: tally.up, down: tally.down, voterCount, totalPlayers, voters: voters || [] },
+        }))
+        break
+      }
+      case 'SKIP_UPDATE': {
+        const { songIndex, requestedCount, totalPlayers } = event.payload
+        setServerSkipRequests((prev) => ({
+          ...prev,
+          [songIndex]: { requestedCount, totalPlayers },
         }))
         break
       }
@@ -230,6 +240,10 @@ function Stage() {
   const currentSongVotes = serverSongVotes[currentTrackIndex] || { up: 0, down: 0, voterCount: 0, totalPlayers: 0, voters: [] }
   const votesRemaining = currentSongVotes.totalPlayers > 0
     ? currentSongVotes.totalPlayers - currentSongVotes.voterCount
+    : null
+  const currentSkipRequests = serverSkipRequests[currentTrackIndex] || { requestedCount: 0, totalPlayers: 0 }
+  const skipRemaining = currentSkipRequests.totalPlayers > 0
+    ? currentSkipRequests.totalPlayers - currentSkipRequests.requestedCount
     : null
 
   return (
@@ -376,14 +390,23 @@ function Stage() {
                         : 'All votes in!'}
                     </p>
                     {votesRemaining === 0 && !songStopped && (
-                      <button
-                        onClick={handleSkip}
-                        disabled={skipRequested}
-                        className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {skipRequested ? 'Skipping...' : 'Skip to Next'}
-                        <span>⏭</span>
-                      </button>
+                      <div className="flex flex-col items-center gap-1.5">
+                        <button
+                          onClick={handleSkip}
+                          disabled={skipRequested}
+                          className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {skipRequested ? 'Skip requested' : 'Skip to Next'}
+                          <span>⏭</span>
+                        </button>
+                        {skipRequested && (
+                          <p className="text-text-muted text-[11px] text-center">
+                            {skipRemaining > 0
+                              ? `Waiting for ${skipRemaining} more to agree...`
+                              : 'Everyone agreed — skipping!'}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
