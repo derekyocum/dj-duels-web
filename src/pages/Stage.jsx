@@ -369,7 +369,6 @@ function Stage() {
                     }`}
                   >
                     <span className="text-lg">🔥</span>
-                    <span className="font-semibold text-sm">{currentSongVotes.up}</span>
                   </button>
                   <button
                     onClick={() => handleVote('down')}
@@ -383,7 +382,6 @@ function Stage() {
                     }`}
                   >
                     <span className="text-lg">🗑️</span>
-                    <span className="font-semibold text-sm">{currentSongVotes.down}</span>
                   </button>
                 </div>
 
