@@ -55,22 +55,19 @@ function routeForSnapshot(snap, duelId) {
 function DuelResync({ duelId }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { logout } = useAuth()
+  const { logoutSessionExpired } = useAuth()
   const locRef = useRef(location)
   useEffect(() => {
     locRef.current = location
   })
 
   useDuelEvents((event) => {
-    // Token expired/invalid: the socket gave up. Navigate to login FIRST so this
-    // route's ProtectedRoute unmounts before logout() flips isAuthenticated to
-    // false — otherwise ProtectedRoute's own redirect (state: {from}) races ours
-    // and wins, clobbering the sessionExpired banner. Clearing the session after
-    // navigating is still safe: AuthProvider lives above the router and isn't
-    // unmounted by this navigation.
+    // Token expired/invalid and the refresh attempt(s) failed: let
+    // ProtectedRoute do the redirect (it reacts to isAuthenticated flipping
+    // false) instead of navigating here too -- see ProtectedRoute.jsx for why
+    // a second, separately-triggered redirect is a race rather than a fix.
     if (event.type === 'AUTH_EXPIRED') {
-      navigate('/login', { replace: true, state: { sessionExpired: true } })
-      logout()
+      logoutSessionExpired()
       return
     }
     if (event.type !== 'STATE_SNAPSHOT') return

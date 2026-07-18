@@ -53,9 +53,44 @@ export async function confirmSignup(username, code) {
 export async function login(username, password) {
   if (!username || !password) throw new Error('Username and password are required')
   const data = await post('/api/auth/login', { username, password })
-  const user = { username: data.username, email: data.email, accessToken: data.accessToken }
+  const user = {
+    username: data.username,
+    email: data.email,
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+    expiresAt: Date.now() + data.expiresIn * 1000,
+  }
   localStorage.setItem(USER_KEY, JSON.stringify(user))
   return user
+}
+
+// Deduplicated: concurrent callers (the proactive AuthContext timer and the
+// DuelSocketContext reactive path can both fire around the same moment) share
+// one in-flight request instead of racing separate ones.
+let refreshInFlight = null
+
+export async function refreshAccessToken() {
+  if (refreshInFlight) return refreshInFlight
+  refreshInFlight = (async () => {
+    const user = getCurrentUser()
+    if (!user?.refreshToken) return false
+    try {
+      const data = await post('/api/auth/refresh', { username: user.username, refreshToken: user.refreshToken })
+      const updated = { ...user, accessToken: data.accessToken, expiresAt: Date.now() + data.expiresIn * 1000 }
+      localStorage.setItem(USER_KEY, JSON.stringify(updated))
+      return true
+    } catch {
+      // The refresh token itself is invalid/expired/revoked -- no recovering
+      // from this short of a fresh login.
+      localStorage.removeItem(USER_KEY)
+      return false
+    }
+  })()
+  try {
+    return await refreshInFlight
+  } finally {
+    refreshInFlight = null
+  }
 }
 
 export async function logout() {
