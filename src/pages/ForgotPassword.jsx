@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import MusicNotes from '../components/MusicNotes'
+import AppBackground from '../components/AppBackground'
 import { forgotPassword, resetPassword } from '../services/authService'
 
 function ForgotPassword() {
@@ -50,13 +50,7 @@ function ForgotPassword() {
 
   return (
     <div className="relative min-h-svh flex flex-col items-center justify-center bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight px-6">
-      <MusicNotes />
-
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-neon-blue/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[400px] bg-neon-purple/6 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[400px] bg-neon-blue/8 rounded-full blur-[100px]" />
-      </div>
+      <AppBackground />
 
       <div className="relative z-10 w-full max-w-sm">
         <a href="/" className="flex items-center justify-center gap-2 no-underline mb-10">

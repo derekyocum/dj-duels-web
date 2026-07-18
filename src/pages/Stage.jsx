@@ -250,11 +250,17 @@ function Stage() {
     <div className="relative min-h-svh flex flex-col overflow-x-hidden bg-gradient-to-b from-[#050510] via-[#060614] to-[#050510]">
       <MusicNotes />
 
-      <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${phase === 'playing' ? 'opacity-100' : 'opacity-30'}`}>
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-neon-blue/6 rounded-full blur-[150px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[400px] bg-neon-purple/4 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[400px] bg-neon-blue/5 rounded-full blur-[120px]" />
-      </div>
+      {/* Gradient-based glow, not blur-filtered -- blur() cost scales heavily on
+          mobile GPUs and this element size/radius combo was a real jank source. */}
+      <div
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${phase === 'playing' ? 'opacity-100' : 'opacity-30'}`}
+        style={{
+          background:
+            'radial-gradient(55% 40% at 50% -6%, rgba(0,212,255,0.14), transparent 60%),' +
+            'radial-gradient(40% 32% at 6% 100%, rgba(179,71,255,0.10), transparent 62%),' +
+            'radial-gradient(40% 32% at 96% 104%, rgba(0,212,255,0.10), transparent 62%)',
+        }}
+      />
 
       <div className={`absolute inset-0 bg-black/40 pointer-events-none transition-opacity duration-1000 ${phase === 'playing' ? 'opacity-100' : 'opacity-0'}`} />
 

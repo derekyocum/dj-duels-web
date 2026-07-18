@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
-import MusicNotes from '../components/MusicNotes'
+import AppBackground from '../components/AppBackground'
 import SongSelection from '../components/SongSelection'
 import SpectatorView from '../components/SpectatorView'
 import AppNav from '../components/AppNav'
@@ -79,13 +79,7 @@ function Faceoff() {
 
   return (
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
-      <MusicNotes />
-
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-neon-blue/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[400px] bg-neon-purple/6 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[400px] bg-neon-blue/8 rounded-full blur-[100px]" />
-      </div>
+      <AppBackground />
 
       <AppNav right={
         <button
