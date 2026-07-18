@@ -1,13 +1,7 @@
 import { useState, useRef } from 'react'
 import CountdownTimer from './CountdownTimer'
-import { SpotifyIcon, YouTubeIcon, AppleMusicIcon } from './PlatformIcons'
+import { SpotifyIcon, YouTubeIcon } from './PlatformIcons'
 import { fetchSpotifyTrack, fetchYouTubeTrack } from '../utils/api'
-
-const PLATFORMS = [
-  { name: 'Spotify', Icon: SpotifyIcon, color: '#1DB954', desc: 'Search your Spotify library' },
-  { name: 'YouTube', Icon: YouTubeIcon, color: '#FF0000', desc: 'Find a track on YouTube' },
-  { name: 'Apple Music', Icon: AppleMusicIcon, color: '#FC3C44', desc: 'Browse Apple Music' },
-]
 
 function detectPlatform(url) {
   if (url.includes('spotify.com/track/')) return 'spotify'
@@ -88,25 +82,6 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, onLockIn 
           placeholder="Paste a Spotify, YouTube, or Apple Music link"
           className="w-full bg-card/60 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
         />
-      </div>
-
-      <div className="w-full mb-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex-1 h-px bg-text-muted/20" />
-          <span className="text-text-muted text-xs uppercase tracking-widest">or connect a platform</span>
-          <div className="flex-1 h-px bg-text-muted/20" />
-        </div>
-        <div className="flex gap-2">
-          {PLATFORMS.map(({ name, Icon, color }) => (
-            <button
-              key={name}
-              className="flex-1 flex items-center justify-center gap-2 bg-card/40 border border-text-muted/10 rounded-lg py-2.5 hover:bg-card-hover hover:border-text-muted/25 transition-all duration-200 cursor-pointer group"
-            >
-              <Icon className="w-4 h-4" style={{ color }} />
-              <span className="text-text-muted text-xs font-medium group-hover:text-text-secondary">{name}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       {loading && (

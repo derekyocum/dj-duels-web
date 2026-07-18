@@ -1,10 +1,68 @@
-import { useNavigate } from 'react-router'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
+import PlatformButton from '../components/PlatformButton'
 import { useAuth } from '../context/AuthContext'
+import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform } from '../utils/api'
+
+const PLATFORM_NAMES = { spotify: 'Spotify', youtube: 'YouTube' }
+const DEFAULT_STATUS = [{ platform: 'spotify', connected: false }, { platform: 'youtube', connected: false }]
+
+// Pure fetch, no setState -- safe to call from an effect's .then() or a plain
+// event handler alike.
+async function loadPlatformStatus() {
+  try {
+    return await fetchPlatformStatus()
+  } catch {
+    return DEFAULT_STATUS
+  }
+}
 
 function Profile() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const [platforms, setPlatforms] = useState([])
+  const [connectingPlatform, setConnectingPlatform] = useState(null)
+
+  const justConnected = searchParams.get('connected')
+  const connectError = searchParams.get('connect_error')
+
+  useEffect(() => {
+    let ignore = false
+    loadPlatformStatus().then((statuses) => {
+      if (!ignore) setPlatforms(statuses)
+    })
+    return () => { ignore = true }
+  }, [])
+
+  // Strip the ?connected=/?connect_error= param after showing its banner once,
+  // so a refresh doesn't keep re-showing a stale success/error message.
+  useEffect(() => {
+    if (!justConnected && !connectError) return
+    const t = setTimeout(() => setSearchParams({}, { replace: true }), 4000)
+    return () => clearTimeout(t)
+  }, [justConnected, connectError, setSearchParams])
+
+  const handleConnect = async (platform) => {
+    setConnectingPlatform(platform)
+    try {
+      const url = await getPlatformAuthorizeUrl(platform)
+      window.location.href = url
+    } catch {
+      setConnectingPlatform(null)
+    }
+  }
+
+  const handleDisconnect = async (platform) => {
+    try {
+      await disconnectPlatform(platform)
+    } catch {
+      // best effort -- status just won't update if this fails
+    }
+    setPlatforms(await loadPlatformStatus())
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -12,6 +70,7 @@ function Profile() {
   }
 
   const initial = user?.username?.charAt(0).toUpperCase() ?? '?'
+  const byPlatform = Object.fromEntries(platforms.map((p) => [p.platform, p]))
 
   return (
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
@@ -40,6 +99,21 @@ function Profile() {
 
       <main className="relative z-10 flex-1 flex flex-col items-center px-6 py-12">
         <div className="w-full max-w-md">
+
+          {justConnected && (
+            <div className="bg-neon-green/10 border border-neon-green/20 rounded-xl px-4 py-3 mb-6">
+              <p className="text-neon-green text-sm font-medium">
+                {PLATFORM_NAMES[justConnected] || justConnected} connected!
+              </p>
+            </div>
+          )}
+          {connectError && (
+            <div className="bg-neon-pink/10 border border-neon-pink/20 rounded-xl px-4 py-3 mb-6">
+              <p className="text-neon-pink text-sm font-medium">
+                Couldn&apos;t connect {PLATFORM_NAMES[connectError] || connectError} — please try again.
+              </p>
+            </div>
+          )}
 
           {/* Avatar + name */}
           <div className="flex flex-col items-center mb-10">
@@ -77,6 +151,34 @@ function Profile() {
                 <span className="text-text-muted text-sm">Email</span>
                 <span className="text-text-primary text-sm font-medium">{user?.email}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Connect Your Music */}
+          <div className="bg-card/60 border border-text-muted/15 rounded-2xl overflow-hidden mt-8">
+            <div className="px-6 py-4 border-b border-text-muted/10">
+              <h2 className="text-text-primary font-semibold text-sm">Connect Your Music</h2>
+            </div>
+            <div className="p-4 space-y-2.5">
+              <PlatformButton
+                name="Spotify"
+                platform="spotify"
+                connected={!!byPlatform.spotify?.connected}
+                accountDisplayName={byPlatform.spotify?.accountDisplayName}
+                connecting={connectingPlatform === 'spotify'}
+                onConnect={() => handleConnect('spotify')}
+                onDisconnect={() => handleDisconnect('spotify')}
+              />
+              <PlatformButton
+                name="YouTube"
+                platform="youtube"
+                connected={!!byPlatform.youtube?.connected}
+                accountDisplayName={byPlatform.youtube?.accountDisplayName}
+                connecting={connectingPlatform === 'youtube'}
+                onConnect={() => handleConnect('youtube')}
+                onDisconnect={() => handleDisconnect('youtube')}
+              />
+              <PlatformButton name="Apple Music" platform="apple" comingSoon />
             </div>
           </div>
 

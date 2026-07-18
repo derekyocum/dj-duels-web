@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router'
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import PlayerSlot from '../components/PlayerSlot'
 import LobbyStatus from '../components/LobbyStatus'
-import PlatformButton from '../components/PlatformButton'
 import LobbySettings from '../components/LobbySettings'
 import AppNav from '../components/AppNav'
 import { useAuth } from '../context/AuthContext'
@@ -17,12 +16,6 @@ const DEFAULT_SETTINGS = {
   genre: 'Any genre',
   tiebreaker: 'none',
 }
-
-const PLATFORMS = [
-  { name: 'Spotify', platform: 'spotify' },
-  { name: 'YouTube', platform: 'youtube' },
-  { name: 'Apple Music', platform: 'apple' },
-]
 
 function Lobby() {
   const { duelId } = useParams()
@@ -39,7 +32,6 @@ function Lobby() {
     isHost: urlClaimsHost,
   }])
   const [copied, setCopied] = useState(false)
-  const [connectedPlatforms, setConnectedPlatforms] = useState({})
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
 
@@ -101,10 +93,6 @@ function Lobby() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }, [lobbyLink])
-
-  const handleTogglePlatform = useCallback((platform) => {
-    setConnectedPlatforms((prev) => ({ ...prev, [platform]: !prev[platform] }))
-  }, [])
 
   const handleStartDuel = useCallback(() => {
     send('lobby/start', {
@@ -190,20 +178,12 @@ function Lobby() {
           ))}
         </div>
 
-        <div className="bg-card/60 border border-text-muted/15 rounded-xl p-5 max-w-md w-full mb-10">
-          <h3 className="text-text-primary font-semibold text-sm mb-3 text-center">Connect Your Music</h3>
-          <div className="space-y-2">
-            {PLATFORMS.map((p) => (
-              <PlatformButton
-                key={p.platform}
-                name={p.name}
-                platform={p.platform}
-                connected={!!connectedPlatforms[p.platform]}
-                onToggle={() => handleTogglePlatform(p.platform)}
-              />
-            ))}
-          </div>
-        </div>
+        <p className="text-text-muted text-xs mb-10 text-center">
+          Connect Spotify or YouTube in your{' '}
+          <Link to="/profile" className="text-neon-blue hover:text-neon-blue/80 transition-colors">
+            Profile
+          </Link>
+        </p>
 
         {isHost && (
           <div className="bg-card/60 border border-text-muted/15 rounded-xl p-5 max-w-md w-full text-center">

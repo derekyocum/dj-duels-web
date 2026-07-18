@@ -43,3 +43,31 @@ export async function fetchYouTubeTrack(url) {
     source: 'youtube',
   }
 }
+
+export async function fetchPlatformStatus() {
+  const response = await fetch(`${API_BASE}/api/platforms/status`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to fetch connection status')
+  return data
+}
+
+export async function getPlatformAuthorizeUrl(platform) {
+  const response = await fetch(`${API_BASE}/api/platforms/${platform}/authorize`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to start connection')
+  return data.authorizeUrl
+}
+
+export async function disconnectPlatform(platform) {
+  const response = await fetch(`${API_BASE}/api/platforms/${platform}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to disconnect')
+  return data
+}
