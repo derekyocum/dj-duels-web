@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
 import AppBackground from '../components/AppBackground'
+import Logo from '../components/Logo'
 import { useAuth } from '../context/AuthContext'
 
 const inputClass = "w-full bg-black/30 border border-white/10 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue/70 focus:ring-2 focus:ring-neon-blue/25 focus:outline-none transition-colors"
@@ -40,7 +41,7 @@ function Login() {
 
       <div className="relative z-10 w-full max-w-sm">
         <a href="/" className="flex items-center justify-center gap-2 no-underline mb-10">
-          <span className="text-2xl">🎧</span>
+          <Logo className="w-7 h-7" />
           <span className="text-xl font-bold tracking-tight text-text-primary">
             DJ <span className="text-neon-blue">Duels</span>
           </span>

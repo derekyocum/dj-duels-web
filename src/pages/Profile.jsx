@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import AppBackground from '../components/AppBackground'
+import Logo from '../components/Logo'
 import PlatformButton from '../components/PlatformButton'
 import { useAuth } from '../context/AuthContext'
 import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform } from '../utils/api'
@@ -78,7 +79,7 @@ function Profile() {
 
       <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
         <a href="/" className="flex items-center gap-2 no-underline">
-          <span className="text-2xl">🎧</span>
+          <Logo className="w-7 h-7" />
           <span className="text-xl font-bold tracking-tight text-text-primary">
             DJ <span className="text-neon-blue">Duels</span>
           </span>

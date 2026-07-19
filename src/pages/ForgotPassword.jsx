@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
+import Logo from '../components/Logo'
 import { forgotPassword, resetPassword } from '../services/authService'
 
 function ForgotPassword() {
@@ -54,7 +55,7 @@ function ForgotPassword() {
 
       <div className="relative z-10 w-full max-w-sm">
         <a href="/" className="flex items-center justify-center gap-2 no-underline mb-10">
-          <span className="text-2xl">🎧</span>
+          <Logo className="w-7 h-7" />
           <span className="text-xl font-bold tracking-tight text-text-primary">
             DJ <span className="text-neon-blue">Duels</span>
           </span>
