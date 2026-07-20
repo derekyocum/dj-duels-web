@@ -299,6 +299,14 @@ function Stage() {
               ) : phase === 'playing' && isYouTube ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <iframe
+                    // key forces a fresh iframe (new browsing context) per video
+                    // instead of React reusing the DOM node and mutating `src` in
+                    // place. Without it, YouTube's player session from the first
+                    // song was still "active" when the src swapped to the second,
+                    // and its own multi-playback guard fired "video paused --
+                    // playing on another player" on a video that was never
+                    // actually playing anywhere else.
+                    key={current.track.videoId}
                     src={`https://www.youtube.com/embed/${current.track.videoId}?autoplay=1&enablejsapi=1&end=300`}
                     title={current.track.name}
                     className="w-full aspect-video"
@@ -309,6 +317,7 @@ function Stage() {
               ) : phase === 'playing' && isSpotify ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <iframe
+                    key={current.track.id}
                     src={`https://open.spotify.com/embed/track/${current.track.id}?utm_source=generator&theme=0&autoplay=1`}
                     title={current.track.name}
                     className="w-full h-[352px]"

@@ -62,7 +62,7 @@ function ForgotPassword() {
         </a>
 
         {step === 'request' ? (
-          <div className="bg-card/60 border border-text-muted/15 rounded-2xl p-8 backdrop-blur-sm">
+          <div className="bg-card/70 border border-text-muted/15 rounded-2xl p-8">
             <h1 className="text-2xl font-bold text-text-primary mb-1">Reset password</h1>
             <p className="text-text-secondary text-sm mb-6">Enter your username and we'll send a reset code to your email.</p>
 
@@ -86,7 +86,7 @@ function ForgotPassword() {
             </form>
           </div>
         ) : (
-          <div className="bg-card/60 border border-text-muted/15 rounded-2xl p-8 backdrop-blur-sm">
+          <div className="bg-card/70 border border-text-muted/15 rounded-2xl p-8">
             <div className="text-center mb-6">
               <span className="text-3xl block mb-3">🔑</span>
               <h1 className="text-2xl font-bold text-text-primary mb-1">Check your email</h1>

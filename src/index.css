@@ -36,11 +36,17 @@ body {
   flex-direction: column;
 }
 
-/* ── Glassmorphism panel: low-alpha white over black + blur + hairline edge ── */
+/* ── Glassmorphism panel: low-alpha white over black + hairline edge ──
+   No backdrop-filter: blur() -- it forces a full recomposite of everything
+   behind the element on every scroll frame, which is the same "expensive
+   blur" cost AppBackground.jsx already avoids for its own glow orbs. This
+   used to have blur(12px) here; a remote low/mid-tier-device playtest showed
+   real scroll jank traceable to it (plus the other blur() sites this same
+   sweep removed -- Landing's hero glow, the three modal overlays, the
+   Signup/ForgotPassword card backgrounds). The alpha bg + border + shadow
+   below still reads as "glass" without paying for it every frame. */
 @utility glass {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     0 10px 40px -12px rgba(0, 0, 0, 0.7),

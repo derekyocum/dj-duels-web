@@ -67,11 +67,16 @@ function Landing() {
           </span>
         </div>
 
-        {/* Hero headline with a soft neon glow bloom behind it */}
+        {/* Hero headline with a soft neon glow bloom behind it -- the gradient's
+            own long transparent falloff does the softening; no blur() filter
+            (was blur-[60px], the single most expensive blur in the app --
+            always on-screen here, and the direct cause of a remote
+            playtester's reported scroll jank, along with the other blur()
+            sites removed in this same pass). */}
         <div className="relative mb-6">
           <div
-            className="absolute inset-0 -z-10 blur-[60px] opacity-60"
-            style={{ background: 'radial-gradient(60% 60% at 50% 50%, rgba(0,128,255,0.35), rgba(139,47,232,0.25) 45%, transparent 70%)' }}
+            className="absolute inset-0 -z-10 opacity-60"
+            style={{ background: 'radial-gradient(70% 70% at 50% 50%, rgba(0,128,255,0.3), rgba(139,47,232,0.2) 35%, transparent 72%)' }}
           />
           <h1 className="text-6xl md:text-8xl font-black tracking-[-0.03em] leading-[0.95] max-w-3xl">
             <span className="bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink bg-clip-text text-transparent">
