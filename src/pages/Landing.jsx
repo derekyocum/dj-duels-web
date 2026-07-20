@@ -12,6 +12,26 @@ function Landing() {
   const { user, logout, isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
+  // Signed-out users used to be able to pick a player count and see a
+  // generated invite link before finally hitting the auth wall at the actual
+  // lobby navigation (ProtectedRoute) -- wasted steps, and sharing a link for
+  // a duel they can never join. Gate the modals themselves instead.
+  const handleCreateClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    setShowCreateModal(true)
+  }
+
+  const handleJoinClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    setShowJoinModal(true)
+  }
+
   return (
     <div className="relative min-h-svh flex flex-col">
       <AppBackground />
@@ -92,13 +112,13 @@ function Landing() {
 
         <div className="flex flex-col sm:flex-row gap-4">
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={handleCreateClick}
             className="group relative px-8 py-3.5 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-4px_rgba(0,128,255,0.5)] hover:shadow-[0_0_45px_-2px_rgba(0,128,255,0.7)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
             Create a Duel
           </button>
           <button
-            onClick={() => setShowJoinModal(true)}
+            onClick={handleJoinClick}
             className="px-8 py-3.5 text-base font-bold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
             Join a Duel
