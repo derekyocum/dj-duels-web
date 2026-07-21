@@ -158,15 +158,18 @@ function Stage() {
         const newTrackHistory = { ...trackHistory }
         if (!newTrackHistory[winner?.name]) newTrackHistory[winner?.name] = []
         newTrackHistory[winner?.name] = [...newTrackHistory[winner?.name], winnerTrack]
+        // Straight to Champion after the tally pause -- the interstitial
+        // RoundWinner page is gone; its vote-count reveal now lives on the
+        // Champion page's participants row (counts stay anonymous until here).
         setTimeout(() => {
-          navigate(`/duel/${duelId}/round/${roundNum}/winner`, {
+          navigate(`/duel/${duelId}/champion`, {
             state: {
-              winner, loser,
+              champion: winner,
+              loser,
               winnerVotes: { up: winnerVotes.up, down: winnerVotes.down },
               loserVotes: { up: loserVotes.up, down: loserVotes.down },
-              roundLabel: roundLabel || 'Round 1',
-              nextAction: 'champion',
-              allPlayers, trackHistory: newTrackHistory,
+              allPlayers,
+              trackHistory: newTrackHistory,
             },
           })
         }, 2000)
@@ -175,7 +178,7 @@ function Stage() {
       default:
         break
     }
-  }, [player1, player2, track1, track2, trackHistory, roundLabel, duelId, roundNum, allPlayers, navigate])
+  }, [player1, player2, track1, track2, trackHistory, duelId, allPlayers, navigate])
 
   const { send } = useDuelSocket()
   useDuelEvents(handleGameEvent)

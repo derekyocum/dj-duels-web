@@ -25,7 +25,7 @@ const DuelSocketContext = createContext(null)
 
 /**
  * Owns ONE STOMP connection for the lifetime of a duel, shared across every
- * in-duel page (Lobby → Faceoff → Stage → RoundWinner → Champion). Because the
+ * in-duel page (Lobby → Faceoff → Stage → Champion). Because the
  * connection lives above the routed pages, navigating between them no longer
  * tears down and rebuilds the socket — so broadcasts are never dropped in a
  * reconnect window. Outbound sends are queued until the socket is connected.

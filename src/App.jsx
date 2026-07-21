@@ -8,7 +8,6 @@ import Signup from './pages/Signup'
 import Lobby from './pages/Lobby'
 import Faceoff from './pages/Faceoff'
 import Stage from './pages/Stage'
-import RoundWinner from './pages/RoundWinner'
 import Champion from './pages/Champion'
 import Profile from './pages/Profile'
 import ForgotPassword from './pages/ForgotPassword'
@@ -27,7 +26,6 @@ function App() {
             <Route path="/lobby/:duelId" element={<Lobby />} />
             <Route path="/duel/:duelId/round/:roundNum" element={<Faceoff />} />
             <Route path="/duel/:duelId/round/:roundNum/stage" element={<Stage />} />
-            <Route path="/duel/:duelId/round/:roundNum/winner" element={<RoundWinner />} />
             <Route path="/duel/:duelId/champion" element={<Champion />} />
           </Route>
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

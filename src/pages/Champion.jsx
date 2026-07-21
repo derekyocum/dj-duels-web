@@ -87,12 +87,47 @@ function formatTime(s) {
   return `${Math.floor(clamped / 60)}:${String(clamped % 60).padStart(2, '0')}`
 }
 
+// Small avatar chip for the participants row. The two battlers carry their
+// revealed vote tallies (votes stay anonymous during the round -- this page is
+// now the only reveal point, since the interstitial RoundWinner page is gone).
+function ParticipantChip({ player, votes, isChampion }) {
+  const bg = COLOR_BG[player.color] || COLOR_BG['neon-blue']
+  const border = COLOR_BORDER[player.color] || COLOR_BORDER['neon-blue']
+  const text = COLOR_TEXT[player.color] || COLOR_TEXT['neon-blue']
+
+  return (
+    <div className={`flex flex-col items-center gap-1.5 ${isChampion ? '' : 'opacity-70'}`}>
+      <div className={`relative w-12 h-12 rounded-full ${bg} border-2 ${border} flex items-center justify-center`}>
+        <span className={`${text} font-bold text-lg`}>{player.name.charAt(0)}</span>
+        {isChampion && <span className="absolute -top-2.5 text-sm">👑</span>}
+      </div>
+      <span className="text-text-secondary text-xs font-medium truncate max-w-[72px]">{player.name}</span>
+      {votes && (
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="text-neon-green">🔥 {votes.up ?? 0}</span>
+          <span className="text-neon-pink">🗑️ {votes.down ?? 0}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Champion() {
   const { duelId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const { champion, trackHistory = {} } = location.state ?? {}
+  const {
+    champion, trackHistory = {}, allPlayers = [],
+    loser, winnerVotes, loserVotes,
+  } = location.state ?? {}
   const tracks = trackHistory[champion?.name] || []
+
+  // Tallies keyed by name so the participants row can attach them to the two
+  // battlers; spectators simply have none. Optional on purpose -- a resync or
+  // an old-shape navigation without tallies still renders everything else.
+  const votesByName = {}
+  if (champion?.name && winnerVotes) votesByName[champion.name] = winnerVotes
+  if (loser?.name && loserVotes) votesByName[loser.name] = loserVotes
 
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [closeAt, setCloseAt] = useState(null)
@@ -185,8 +220,12 @@ function Champion() {
           <p className="text-text-primary font-bold text-2xl text-center mt-4">{champion?.name}</p>
         </div>
 
+        {/* Every track the champion locked in across the battle, one per slide */}
         {tracks.length > 0 && (
-          <div className="w-full max-w-xl mt-4">
+          <div className="w-full max-w-md mt-4">
+            <p className="text-text-muted text-[10px] uppercase tracking-widest font-medium text-center mb-3">
+              {champion?.name}&apos;s winning set
+            </p>
             <div className="overflow-hidden">
               <div
                 className="flex transition-transform duration-700 ease-in-out"
@@ -194,17 +233,21 @@ function Champion() {
               >
                 {tracks.map((track, i) => (
                   <div key={i} className="w-full shrink-0 px-6">
-                    <div className="flex items-center gap-4 py-3">
-                      {track.albumArtUrl && (
+                    <div className="flex flex-col items-center gap-3 py-2 text-center">
+                      {track.albumArtUrl ? (
                         <img
                           src={track.albumArtUrl}
                           alt={track.album || track.name}
-                          className="w-16 h-16 rounded-lg object-cover opacity-70 shrink-0"
+                          className="w-32 h-32 rounded-xl object-cover shadow-[0_8px_30px_-8px_rgba(0,0,0,0.8)]"
                         />
+                      ) : (
+                        <div className="w-32 h-32 rounded-xl bg-card flex items-center justify-center">
+                          <span className="text-3xl">🎵</span>
+                        </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-text-primary/70 font-semibold text-sm truncate">{track.name}</p>
-                        <p className="text-text-muted text-xs truncate">{track.artist}</p>
+                        <p className="text-text-primary font-semibold text-sm truncate max-w-[260px]">{track.name}</p>
+                        <p className="text-text-muted text-xs truncate max-w-[260px]">{track.artist}</p>
                         <span className="text-text-muted/40 text-xs">Round {i + 1}</span>
                       </div>
                     </div>
@@ -245,6 +288,25 @@ function Champion() {
             </button>
           </div>
         </div>
+
+        {/* Participants row -- everyone from the lobby; battlers show their tallies */}
+        {allPlayers.length > 0 && (
+          <div className="mt-10 pt-6 border-t border-text-muted/10 w-full max-w-md">
+            <p className="text-text-muted text-[10px] uppercase tracking-widest font-medium text-center mb-4">
+              Tonight&apos;s lineup
+            </p>
+            <div className="flex flex-wrap items-start justify-center gap-6">
+              {allPlayers.map((p, i) => (
+                <ParticipantChip
+                  key={i}
+                  player={p}
+                  votes={votesByName[p.name]}
+                  isChampion={p.name === champion?.name}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
