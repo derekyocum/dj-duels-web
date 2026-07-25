@@ -10,6 +10,7 @@ import Faceoff from './pages/Faceoff'
 import Stage from './pages/Stage'
 import Champion from './pages/Champion'
 import Profile from './pages/Profile'
+import Leaderboard from './pages/Leaderboard'
 import ForgotPassword from './pages/ForgotPassword'
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
             <Route path="/duel/:duelId/champion" element={<Champion />} />
           </Route>
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

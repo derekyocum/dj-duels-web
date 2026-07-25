@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams, Link } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
 import PlatformButton from '../components/PlatformButton'
@@ -147,6 +147,12 @@ function Profile() {
                 </div>
               ))}
             </div>
+            <Link
+              to="/leaderboard"
+              className="mt-4 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-neon-yellow/25 text-neon-yellow text-sm font-semibold hover:bg-neon-yellow/10 transition-colors"
+            >
+              🏆 View leaderboard
+            </Link>
           </div>
 
           {/* Account info card */}
