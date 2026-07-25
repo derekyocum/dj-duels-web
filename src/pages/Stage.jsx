@@ -302,15 +302,21 @@ function Stage() {
               ) : phase === 'playing' && isYouTube ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <iframe
-                    // key forces a fresh iframe (new browsing context) per video
-                    // instead of React reusing the DOM node and mutating `src` in
-                    // place. Without it, YouTube's player session from the first
-                    // song was still "active" when the src swapped to the second,
-                    // and its own multi-playback guard fired "video paused --
-                    // playing on another player" on a video that was never
-                    // actually playing anywhere else.
+                    // Two things keep YouTube's "this video is playing on another
+                    // screen" guard from firing when we swap songs:
+                    //   1. key={videoId} forces a brand-new iframe per video instead
+                    //      of React reusing the node and mutating `src` in place.
+                    //   2. NO enablejsapi=1. The app never drives the player through
+                    //      the JS API, and enablejsapi opts the embed into YouTube's
+                    //      remote-control ("connected devices") machinery, which
+                    //      reads/writes yt-remote-* in localStorage. Stale entries
+                    //      left by the first song's embed make the second song's
+                    //      embed believe it's already playing on another screen and
+                    //      refuse to start -- the exact bug players hit. Dropping the
+                    //      flag and using the cookieless host removes that shared
+                    //      cross-embed state entirely.
                     key={current.track.videoId}
-                    src={`https://www.youtube.com/embed/${current.track.videoId}?autoplay=1&enablejsapi=1&end=300`}
+                    src={`https://www.youtube-nocookie.com/embed/${current.track.videoId}?autoplay=1&playsinline=1&rel=0&end=300`}
                     title={current.track.name}
                     className="w-full aspect-video"
                     allow="autoplay; encrypted-media"
