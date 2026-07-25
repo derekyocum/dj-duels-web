@@ -150,7 +150,7 @@ function Stage() {
         break
       }
       case 'ROUND_COMPLETE': {
-        const { winnerName, loserName, winnerVotes, loserVotes } = event.payload
+        const { winnerName, loserName, winnerVotes, loserVotes, winnerTrophies } = event.payload
         setPhase('finished')
         const winner = winnerName === player1?.name ? player1 : player2
         const loser = loserName === player1?.name ? player1 : player2
@@ -168,6 +168,9 @@ function Stage() {
               loser,
               winnerVotes: { up: winnerVotes.up, down: winnerVotes.down },
               loserVotes: { up: loserVotes.up, down: loserVotes.down },
+              // Server-awarded lifetime trophy total for the winner (-1 if the
+              // stats write failed -- Champion treats that as "unknown" and hides it)
+              winnerTrophies,
               allPlayers,
               trackHistory: newTrackHistory,
             },

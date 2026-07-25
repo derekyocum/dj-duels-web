@@ -118,8 +118,10 @@ function Champion() {
   const navigate = useNavigate()
   const {
     champion, trackHistory = {}, allPlayers = [],
-    loser, winnerVotes, loserVotes,
+    loser, winnerVotes, loserVotes, winnerTrophies,
   } = location.state ?? {}
+  // -1 means the server couldn't record the win (DynamoDB blip); treat as unknown.
+  const showTrophies = typeof winnerTrophies === 'number' && winnerTrophies >= 0
   const tracks = trackHistory[champion?.name] || []
 
   // Tallies keyed by name so the participants row can attach them to the two
@@ -218,6 +220,13 @@ function Champion() {
             <span className={`${text} font-bold text-5xl`}>{champion?.name?.charAt(0)}</span>
           </div>
           <p className="text-text-primary font-bold text-2xl text-center mt-4">{champion?.name}</p>
+          {showTrophies && (
+            <div className="flex justify-center mt-3">
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-neon-yellow/10 border border-neon-yellow/30 text-neon-yellow font-bold text-sm">
+                🏆 {winnerTrophies} {winnerTrophies === 1 ? 'trophy' : 'trophies'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Every track the champion locked in across the battle, one per slide */}

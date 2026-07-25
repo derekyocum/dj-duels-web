@@ -4,7 +4,7 @@ import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
 import PlatformButton from '../components/PlatformButton'
 import { useAuth } from '../context/AuthContext'
-import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform } from '../utils/api'
+import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform, fetchMyStats } from '../utils/api'
 
 const PLATFORM_NAMES = { spotify: 'Spotify', youtube: 'YouTube' }
 const DEFAULT_STATUS = [{ platform: 'spotify', connected: false }, { platform: 'youtube', connected: false }]
@@ -26,6 +26,7 @@ function Profile() {
 
   const [platforms, setPlatforms] = useState([])
   const [connectingPlatform, setConnectingPlatform] = useState(null)
+  const [stats, setStats] = useState(null)
 
   const justConnected = searchParams.get('connected')
   const connectError = searchParams.get('connect_error')
@@ -35,6 +36,10 @@ function Profile() {
     loadPlatformStatus().then((statuses) => {
       if (!ignore) setPlatforms(statuses)
     })
+    // Best-effort: if stats fail to load, the card just shows zeros.
+    fetchMyStats()
+      .then((s) => { if (!ignore) setStats(s) })
+      .catch(() => {})
     return () => { ignore = true }
   }, [])
 
@@ -120,15 +125,27 @@ function Profile() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 gap-4 mb-8">
-            <div className="bg-card/60 border border-text-muted/15 rounded-2xl p-6 flex items-center gap-5">
+          <div className="mb-8">
+            <div className="bg-card/60 border border-neon-yellow/20 rounded-2xl p-6 flex items-center gap-5 mb-4">
               <div className="w-14 h-14 rounded-xl bg-neon-yellow/10 border border-neon-yellow/20 flex items-center justify-center shrink-0">
                 <span className="text-2xl">🏆</span>
               </div>
               <div>
-                <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-0.5">Battles Won</p>
-                <p className="text-3xl font-black text-text-primary">0</p>
+                <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-0.5">Trophies</p>
+                <p className="text-3xl font-black text-neon-yellow tabular-nums">{stats?.trophies ?? 0}</p>
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Wins', value: stats?.wins ?? 0, cls: 'text-neon-green' },
+                { label: 'Losses', value: stats?.losses ?? 0, cls: 'text-neon-pink' },
+                { label: 'Games', value: stats?.gamesPlayed ?? 0, cls: 'text-text-primary' },
+              ].map((s) => (
+                <div key={s.label} className="bg-card/60 border border-text-muted/15 rounded-2xl p-4 text-center">
+                  <p className={`text-2xl font-black tabular-nums ${s.cls}`}>{s.value}</p>
+                  <p className="text-text-muted text-[11px] font-semibold uppercase tracking-wider mt-0.5">{s.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 

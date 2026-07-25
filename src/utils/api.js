@@ -71,3 +71,21 @@ export async function disconnectPlatform(platform) {
   if (!response.ok) throw new Error(data.error || 'Failed to disconnect')
   return data
 }
+
+export async function fetchMyStats() {
+  const response = await fetch(`${API_BASE}/api/stats/me`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to fetch stats')
+  return data // { username, trophies, wins, losses, gamesPlayed }
+}
+
+export async function fetchLeaderboard(limit = 20) {
+  const response = await fetch(`${API_BASE}/api/stats/leaderboard?limit=${limit}`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to fetch leaderboard')
+  return data // [{ username, trophies, wins, losses, gamesPlayed }, ...]
+}
