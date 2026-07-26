@@ -93,6 +93,9 @@ function Stage() {
   const [serverSkipRequests, setServerSkipRequests] = useState({})
   // Server-authoritative end timestamp for the current song; syncs all clients
   const [songEndsAt, setSongEndsAt] = useState(location.state?.songEndsAt ?? null)
+  // When a match ends but the tournament continues: { winnerName, nextLabel } for
+  // the "X advances!" interstitial shown before routing to the next faceoff.
+  const [advanceInfo, setAdvanceInfo] = useState(null)
 
   const tracks = [
     { track: track1, player: player1, key: 'player1' },
@@ -149,8 +152,38 @@ function Stage() {
         setTimeout(() => setPhase('playing'), 1500)
         break
       }
+      case 'NEXT_MATCH': {
+        // A match finished but the tournament isn't over. Record the match
+        // winner's track (so the champion's "winning set" builds up across the
+        // bracket), show a brief interstitial, then route everyone to the next
+        // match's faceoff. round+1 keeps the URL unique so screens remount fresh.
+        const { prevWinnerName, player1: np1, player2: np2, roundLabel: nextLabel,
+                bracket: nextBracket, settings, allPlayers: nextAll, faceoffEndsAt } = event.payload
+        const matchWinnerTrack = prevWinnerName === player1?.name ? track1 : track2
+        const carried = { ...trackHistory }
+        if (prevWinnerName) {
+          carried[prevWinnerName] = [...(carried[prevWinnerName] || []), matchWinnerTrack]
+        }
+        setPhase('finished')
+        setAdvanceInfo({ winnerName: prevWinnerName, nextLabel, np1, np2 })
+        setTimeout(() => {
+          navigate(`/duel/${duelId}/round/${round + 1}`, {
+            state: {
+              player1: np1,
+              player2: np2,
+              bracket: nextBracket,
+              roundLabel: nextLabel,
+              settings,
+              allPlayers: nextAll,
+              trackHistory: carried,
+              faceoffEndsAt,
+            },
+          })
+        }, 2600)
+        break
+      }
       case 'ROUND_COMPLETE': {
-        const { winnerName, loserName, winnerVotes, loserVotes, winnerTrophies } = event.payload
+        const { winnerName, loserName, winnerVotes, loserVotes, winnerTrophies, bracket: finalBracket } = event.payload
         setPhase('finished')
         const winner = winnerName === player1?.name ? player1 : player2
         const loser = loserName === player1?.name ? player1 : player2
@@ -173,6 +206,7 @@ function Stage() {
               winnerTrophies,
               allPlayers,
               trackHistory: newTrackHistory,
+              bracket: finalBracket,
             },
           })
         }, 2000)
@@ -181,7 +215,7 @@ function Stage() {
       default:
         break
     }
-  }, [player1, player2, track1, track2, trackHistory, duelId, allPlayers, navigate])
+  }, [player1, player2, track1, track2, trackHistory, duelId, allPlayers, navigate, round])
 
   const { send } = useDuelSocket()
   useDuelEvents(handleGameEvent)
@@ -277,7 +311,20 @@ function Stage() {
       } />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-4">
-        {phase === 'finished' ? (
+        {phase === 'finished' && advanceInfo ? (
+          <div className="flex flex-col items-center gap-4 text-center">
+            <span className="text-5xl animate-bounce">🏆</span>
+            <h2 className="text-2xl md:text-3xl font-bold text-neon-green">{advanceInfo.winnerName} advances!</h2>
+            {advanceInfo.np1 && advanceInfo.np2 && (
+              <p className="text-text-secondary">
+                {advanceInfo.nextLabel ? `${advanceInfo.nextLabel}: ` : 'Next up: '}
+                <span className="text-text-primary font-semibold">{advanceInfo.np1.name}</span>
+                {' vs '}
+                <span className="text-text-primary font-semibold">{advanceInfo.np2.name}</span>
+              </p>
+            )}
+          </div>
+        ) : phase === 'finished' ? (
           <div className="flex flex-col items-center gap-4">
             <span className="text-4xl animate-pulse">⚡</span>
             <h2 className="text-2xl md:text-3xl font-bold text-text-primary">Tallying votes...</h2>

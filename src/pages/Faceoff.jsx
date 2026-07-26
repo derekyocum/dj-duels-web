@@ -4,6 +4,7 @@ import AppBackground from '../components/AppBackground'
 import SongSelection from '../components/SongSelection'
 import SpectatorView from '../components/SpectatorView'
 import AppNav from '../components/AppNav'
+import BracketPanel from '../components/BracketPanel'
 import Reconnecting from '../components/Reconnecting'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
@@ -19,12 +20,20 @@ function Faceoff() {
   const settings = location.state?.settings || {}
   const totalTime = settings.timeLimit || 90
   const round = parseInt(roundNum, 10)
+  const bracket = location.state?.bracket
+  const roundLabel = location.state?.roundLabel
+  // Carried across matches by Stage's NEXT_MATCH so the champion's winning-set
+  // carousel accumulates; the server's per-match payload doesn't track it.
+  const priorTrackHistory = location.state?.trackHistory
 
+  const isBattler = user?.username === battler1?.name || user?.username === battler2?.name
   const opponent = user?.username === battler2?.name ? battler1 : battler2
 
   const faceoffEndsAt = location.state?.faceoffEndsAt
 
-  const [viewMode, setViewMode] = useState('battler')
+  // Non-battlers are the voting crowd for this match -- they watch the picks,
+  // they don't make one, so they default to (and stay on) the spectator view.
+  const [viewMode, setViewMode] = useState(isBattler ? 'battler' : 'spectator')
   const [timeLeft, setTimeLeft] = useState(() =>
     faceoffEndsAt ? Math.max(0, Math.round((faceoffEndsAt - Date.now()) / 1000)) : totalTime
   )
@@ -49,15 +58,16 @@ function Faceoff() {
           track1: p.track1,
           track2: p.track2,
           allPlayers: p.allPlayers,
-          trackHistory: p.trackHistory,
+          trackHistory: priorTrackHistory ?? p.trackHistory,
           roundLabel: p.roundLabel,
+          bracket: p.bracket,
           songEndsAt: p.song0EndsAt,
         },
       })
     } else if (event.type === 'SESSION_EXPIRED' || event.type === 'SESSION_CLOSED') {
       navigate('/')
     }
-  }, [navigate, duelId, roundNum])
+  }, [navigate, duelId, roundNum, priorTrackHistory])
 
   const { send } = useDuelSocket()
   useDuelEvents(handleGameEvent)
@@ -82,13 +92,40 @@ function Faceoff() {
       <AppBackground />
 
       <AppNav right={
-        <button
-          onClick={() => setViewMode((v) => v === 'battler' ? 'spectator' : 'battler')}
-          className="px-3 py-1.5 text-xs font-semibold rounded-full border border-text-muted/30 text-text-muted hover:text-text-secondary hover:border-text-muted/50 transition-colors cursor-pointer"
-        >
-          {viewMode === 'battler' ? '👁 Spectator View' : '🎵 Battler View'}
-        </button>
+        isBattler ? (
+          <button
+            onClick={() => setViewMode((v) => v === 'battler' ? 'spectator' : 'battler')}
+            className="px-3 py-1.5 text-xs font-semibold rounded-full border border-text-muted/30 text-text-muted hover:text-text-secondary hover:border-text-muted/50 transition-colors cursor-pointer"
+          >
+            {viewMode === 'battler' ? '👁 Spectator View' : '🎵 Battler View'}
+          </button>
+        ) : (
+          <span className="px-3 py-1.5 text-xs font-semibold rounded-full border border-text-muted/30 text-text-muted">
+            👁 Spectating
+          </span>
+        )
       } />
+
+      {/* Where-am-I anchor: the round + bracket, plus a one-line nudge on what to do. */}
+      {(roundLabel || bracket) && (
+        <div className="relative z-10 flex flex-col items-center gap-3 px-6 pt-1 pb-3">
+          {roundLabel && (
+            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-neon-purple/10 text-neon-purple border border-neon-purple/25">
+              {roundLabel}
+            </span>
+          )}
+          {bracket && (
+            <div className="w-full max-w-2xl">
+              <BracketPanel bracket={bracket} you={user?.username} />
+            </div>
+          )}
+          <p className="text-text-muted text-xs text-center max-w-md">
+            {isBattler
+              ? 'Pick your best track and lock it in — the whole room votes on it.'
+              : `You're spectating this match. When the tracks play, you'll vote 🔥 or 🗑️ on both.`}
+          </p>
+        </div>
+      )}
 
       {settings.title && (
         <div className="relative z-10 flex justify-center px-6 pb-2">

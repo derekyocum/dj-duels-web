@@ -21,6 +21,8 @@ function routeForSnapshot(snap, duelId) {
           settings: snap.settings,
           allPlayers: snap.allPlayers,
           roundLabel: snap.roundLabel,
+          bracket: snap.bracket,
+          trackHistory: snap.trackHistory,
           faceoffEndsAt: snap.faceoffEndsAt,
         },
       }
@@ -35,6 +37,7 @@ function routeForSnapshot(snap, duelId) {
           allPlayers: snap.allPlayers,
           trackHistory: snap.trackHistory,
           roundLabel: snap.roundLabel,
+          bracket: snap.bracket,
           songEndsAt: snap.songEndsAt,
           currentSongIndex: snap.currentSongIndex,
         },

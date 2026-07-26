@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
+import BracketPanel from '../components/BracketPanel'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
 const COLOR_BG = {
@@ -118,7 +119,7 @@ function Champion() {
   const navigate = useNavigate()
   const {
     champion, trackHistory = {}, allPlayers = [],
-    loser, winnerVotes, loserVotes, winnerTrophies,
+    loser, winnerVotes, loserVotes, winnerTrophies, bracket,
   } = location.state ?? {}
   // -1 means the server couldn't record the win (DynamoDB blip); treat as unknown.
   const showTrophies = typeof winnerTrophies === 'number' && winnerTrophies >= 0
@@ -314,6 +315,16 @@ function Champion() {
                 />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Tournament recap -- only meaningful once there was more than one match */}
+        {Array.isArray(bracket) && bracket.length > 1 && (
+          <div className="mt-8 pt-6 border-t border-text-muted/10 w-full max-w-3xl">
+            <p className="text-text-muted text-[10px] uppercase tracking-widest font-medium text-center mb-4">
+              How it played out
+            </p>
+            <BracketPanel bracket={bracket} you={champion?.name} />
           </div>
         )}
       </main>
