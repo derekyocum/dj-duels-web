@@ -34,6 +34,12 @@ function Lobby() {
   const [copied, setCopied] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
+  // First-timers get a quick how-it-works tip; dismissing it is remembered.
+  const [showHowTo, setShowHowTo] = useState(() => localStorage.getItem('dj_duels_hide_howto') !== '1')
+  const dismissHowTo = () => {
+    localStorage.setItem('dj_duels_hide_howto', '1')
+    setShowHowTo(false)
+  }
 
   // The server is the source of truth for who's host (it falls back to "first
   // joiner" when nobody's ?host=true link claims it — see GameSession.addPlayer).
@@ -159,6 +165,24 @@ function Lobby() {
                 {settings.genre}
               </span>
             )}
+          </div>
+        )}
+
+        {showHowTo && (
+          <div className="relative mb-6 w-full max-w-md bg-card/50 border border-neon-blue/15 rounded-2xl px-5 py-4">
+            <button
+              onClick={dismissHowTo}
+              className="absolute top-2.5 right-3 text-text-muted/60 hover:text-text-muted text-sm cursor-pointer"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+            <p className="text-text-secondary text-[11px] uppercase tracking-widest font-semibold mb-2">How it works</p>
+            <ol className="text-text-muted text-xs space-y-1.5 list-decimal list-inside">
+              <li>Share the code, then start when your crew&apos;s in.</li>
+              <li>Each match, two DJs pick a track — the whole room votes 🔥 or 🗑️ on both.</li>
+              <li>Winners advance round by round until one takes the crown 👑.</li>
+            </ol>
           </div>
         )}
 

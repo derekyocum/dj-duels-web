@@ -9,6 +9,21 @@ import Reconnecting from '../components/Reconnecting'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
+// 'eliminated' if the user already lost a decided match in this bracket, else
+// 'alive' (still in it — battling now or waiting for a later round). null when
+// there's no real bracket (a plain 1v1).
+function bracketStatus(bracket, username) {
+  if (!Array.isArray(bracket) || !username) return null
+  for (const round of bracket) {
+    for (const m of round) {
+      if (m.winner && m.winner !== username && (m.player1 === username || m.player2 === username)) {
+        return 'eliminated'
+      }
+    }
+  }
+  return 'alive'
+}
+
 function Faceoff() {
   const { duelId, roundNum } = useParams()
   const location = useLocation()
@@ -27,6 +42,7 @@ function Faceoff() {
   const priorTrackHistory = location.state?.trackHistory
 
   const isBattler = user?.username === battler1?.name || user?.username === battler2?.name
+  const status = bracketStatus(bracket, user?.username)
   const opponent = user?.username === battler2?.name ? battler1 : battler2
 
   const faceoffEndsAt = location.state?.faceoffEndsAt
@@ -122,7 +138,11 @@ function Faceoff() {
           <p className="text-text-muted text-xs text-center max-w-md">
             {isBattler
               ? 'Pick your best track and lock it in — the whole room votes on it.'
-              : `You're spectating this match. When the tracks play, you'll vote 🔥 or 🗑️ on both.`}
+              : status === 'eliminated'
+                ? `You're knocked out — but the crowd decides everything. Keep voting 🔥 or 🗑️ on every match.`
+                : status === 'alive'
+                  ? `You battle in a later round. For now, vote 🔥 or 🗑️ on this match.`
+                  : `You're spectating this match. When the tracks play, you'll vote 🔥 or 🗑️ on both.`}
           </p>
         </div>
       )}
