@@ -167,6 +167,14 @@ function Stage() {
         setPhase('finished')
         setAdvanceInfo({ winnerName: prevWinnerName, nextLabel, np1, np2 })
         setTimeout(() => {
+          // A brief WS reconnect during this interstitial can trigger a resync
+          // that jumps to Faceoff before this timer fires (the server already
+          // flips phase to FACEOFF as part of advancing the match, so the
+          // reconnect's snapshot looks identical to what this timer is about to
+          // do). Bail if we've already navigated off Stage -- mirrors the
+          // mobile StageScreen guard, where the equivalent race actually crashed
+          // the app; here it would just be a redundant/confusing navigation.
+          if (!window.location.pathname.includes('/stage')) return
           navigate(`/duel/${duelId}/round/${round + 1}`, {
             state: {
               player1: np1,
@@ -195,6 +203,8 @@ function Stage() {
         // RoundWinner page is gone; its vote-count reveal now lives on the
         // Champion page's participants row (counts stay anonymous until here).
         setTimeout(() => {
+          // Same stale-transition guard as NEXT_MATCH above.
+          if (!window.location.pathname.includes('/stage')) return
           navigate(`/duel/${duelId}/champion`, {
             state: {
               champion: winner,
