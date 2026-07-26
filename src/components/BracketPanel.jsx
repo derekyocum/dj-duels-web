@@ -34,9 +34,13 @@ function BracketPanel({ bracket, you, className = '' }) {
   if (!Array.isArray(bracket) || bracket.length === 0) return null
   const total = bracket.length
 
+  // Center the whole bracket when it fits (a 1-round Final shouldn't hug the
+  // left), but let it scroll from the left once there are enough rounds to
+  // overflow. The middle box shrinks to content up to the available width.
   return (
-    <div className={`w-full overflow-x-auto ${className}`}>
-      <div className="flex gap-3 min-w-min pb-1">
+    <div className={`w-full flex justify-center ${className}`}>
+      <div className="max-w-full overflow-x-auto">
+        <div className="flex gap-3 w-max pb-1">
         {bracket.map((round, ri) => (
           <div key={ri} className="flex flex-col justify-center gap-2 min-w-[128px]">
             <p className="text-text-muted text-[10px] uppercase tracking-widest font-medium text-center">
@@ -61,6 +65,7 @@ function BracketPanel({ bracket, you, className = '' }) {
             })}
           </div>
         ))}
+        </div>
       </div>
     </div>
   )

@@ -100,6 +100,15 @@ function Lobby() {
     setTimeout(() => setCopied(false), 2000)
   }, [lobbyLink])
 
+  // The button next to the code copies the CODE itself, not the invite link --
+  // "Copy duel code" was writing the full https link, so a paste gave the URL.
+  const [codeCopied, setCodeCopied] = useState(false)
+  const handleCopyCode = useCallback(() => {
+    navigator.clipboard.writeText(duelId)
+    setCodeCopied(true)
+    setTimeout(() => setCodeCopied(false), 2000)
+  }, [duelId])
+
   const handleStartDuel = useCallback(() => {
     send('lobby/start', {
       duelId,
@@ -135,11 +144,11 @@ function Lobby() {
               {duelId}
             </span>
             <button
-              onClick={handleCopy}
+              onClick={handleCopyCode}
               className="p-2.5 rounded-lg bg-card hover:bg-card-hover border border-text-muted/20 text-text-secondary hover:text-neon-blue transition-colors cursor-pointer"
               title="Copy duel code"
             >
-              {copied ? '✓' : '📋'}
+              {codeCopied ? '✓' : '📋'}
             </button>
             {isHost && (
               <button
