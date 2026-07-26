@@ -185,6 +185,7 @@ function Faceoff() {
             timeLeft={timeLeft}
             totalTime={totalTime}
             roundNum={round}
+            roundLabel={roundLabel}
             onLockIn={handleLockIn}
           />
         ) : (
@@ -194,6 +195,7 @@ function Faceoff() {
             timeLeft={timeLeft}
             totalTime={totalTime}
             roundNum={round}
+            roundLabel={roundLabel}
           />
         )}
       </main>

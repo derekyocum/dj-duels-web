@@ -50,11 +50,11 @@ function PlayerAvatar({ player }) {
   )
 }
 
-function SpectatorView({ player1, player2, timeLeft, totalTime = 90, roundNum }) {
+function SpectatorView({ player1, player2, timeLeft, totalTime = 90, roundNum, roundLabel }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
       <span className="inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20 mb-8">
-        Round {roundNum}
+        {roundLabel || `Round ${roundNum}`}
       </span>
 
       <div className="flex items-center gap-6 sm:gap-10 mb-10">

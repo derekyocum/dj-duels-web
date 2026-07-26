@@ -14,7 +14,7 @@ const PLATFORM_ICON = {
   youtube: { Icon: YouTubeIcon, color: '#FF0000' },
 }
 
-function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, onLockIn }) {
+function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabel, onLockIn }) {
   const [songLink, setSongLink] = useState('')
   const [trackInfo, setTrackInfo] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -62,7 +62,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, onLockIn 
   return (
     <div className="flex-1 flex flex-col items-center px-6 py-8 max-w-lg mx-auto w-full">
       <span className="inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20 mb-4">
-        Round {roundNum}
+        {roundLabel || `Round ${roundNum}`}
       </span>
 
       <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-2">Pick your track</h2>
