@@ -11,6 +11,7 @@ import Stage from './pages/Stage'
 import Champion from './pages/Champion'
 import Profile from './pages/Profile'
 import Leaderboard from './pages/Leaderboard'
+import Matchmaking from './pages/Matchmaking'
 import ForgotPassword from './pages/ForgotPassword'
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
           </Route>
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          <Route path="/matchmaking" element={<ProtectedRoute><Matchmaking /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

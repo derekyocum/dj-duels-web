@@ -32,6 +32,14 @@ function Landing() {
     setShowJoinModal(true)
   }
 
+  const handleFindMatchClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    navigate('/matchmaking')
+  }
+
   return (
     <div className="relative min-h-svh flex flex-col">
       <AppBackground />
@@ -124,6 +132,14 @@ function Landing() {
             Join a Duel
           </button>
         </div>
+
+        <button
+          onClick={handleFindMatchClick}
+          className="mt-4 flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-full border border-neon-green/30 text-neon-green hover:bg-neon-green/10 hover:border-neon-green/50 transition-all duration-300 cursor-pointer"
+        >
+          🎧 Find a Match
+        </button>
+        <p className="text-text-muted text-xs mt-2">No code needed — we&apos;ll pair you with 3 other players</p>
 
         <div className="mt-16 flex items-center gap-8 text-text-muted text-sm">
           <div className="flex flex-col items-center gap-1">

@@ -9,6 +9,25 @@ const authHeaders = () => {
   }
 }
 
+// "Find a Match" -- authenticated REST polling, no WebSocket while waiting
+// (see MatchmakingController on the backend for why). Groups are a fixed 4
+// players; once matched, the client joins the normal /lobby/:duelId flow.
+export async function joinMatchmaking() {
+  const response = await fetch(`${API_BASE}/api/matchmaking/join`, { method: 'POST', headers: authHeaders() })
+  if (!response.ok) throw new Error('Failed to join matchmaking')
+}
+
+export async function matchmakingStatus() {
+  const response = await fetch(`${API_BASE}/api/matchmaking/status`, { headers: authHeaders() })
+  if (!response.ok) throw new Error('Failed to check matchmaking status')
+  return response.json() // { status: 'waiting'|'matched'|'not_queued', duelId, position }
+}
+
+export async function cancelMatchmaking() {
+  const response = await fetch(`${API_BASE}/api/matchmaking/cancel`, { method: 'POST', headers: authHeaders() })
+  if (!response.ok) throw new Error('Failed to cancel matchmaking')
+}
+
 export async function fetchSpotifyTrack(url) {
   const response = await fetch(`${API_BASE}/api/tracks/spotify?url=${encodeURIComponent(url)}`, {
     headers: authHeaders(),
