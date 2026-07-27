@@ -5,6 +5,7 @@ import PlayerSlot from '../components/PlayerSlot'
 import LobbyStatus from '../components/LobbyStatus'
 import LobbySettings from '../components/LobbySettings'
 import AppNav from '../components/AppNav'
+import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 import { PLAYER_COLORS } from '../utils/duelUtils'
@@ -230,9 +231,7 @@ function Lobby() {
         )}
       </main>
 
-      <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
-        &copy; {new Date().getFullYear()} DJ Duels
-      </footer>
+      <Footer />
 
       <LobbySettings
         isOpen={showSettings}

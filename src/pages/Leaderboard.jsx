@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
+import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { fetchLeaderboard, fetchMyStats } from '../utils/api'
 
@@ -109,9 +110,7 @@ function Leaderboard() {
         </div>
       </main>
 
-      <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
-        &copy; {new Date().getFullYear()} DJ Duels
-      </footer>
+      <Footer />
     </div>
   )
 }

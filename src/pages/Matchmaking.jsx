@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
+import Footer from '../components/Footer'
 import { joinMatchmaking, matchmakingStatus, cancelMatchmaking } from '../utils/api'
 
 const POLL_MS = 2000
@@ -151,9 +152,7 @@ function Matchmaking() {
         )}
       </main>
 
-      <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
-        &copy; {new Date().getFullYear()} DJ Duels
-      </footer>
+      <Footer />
     </div>
   )
 }

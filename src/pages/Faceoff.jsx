@@ -6,6 +6,7 @@ import SpectatorView from '../components/SpectatorView'
 import AppNav from '../components/AppNav'
 import BracketPanel from '../components/BracketPanel'
 import Reconnecting from '../components/Reconnecting'
+import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
@@ -200,9 +201,7 @@ function Faceoff() {
         )}
       </main>
 
-      <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
-        &copy; {new Date().getFullYear()} DJ Duels
-      </footer>
+      <Footer />
     </div>
   )
 }

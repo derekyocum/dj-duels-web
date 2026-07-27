@@ -4,6 +4,7 @@ import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
 import CreateDuelModal from '../components/CreateDuelModal'
 import JoinDuelModal from '../components/JoinDuelModal'
+import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 
 function Landing() {
@@ -184,9 +185,7 @@ function Landing() {
         </div>
       </section>
 
-      <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
-        &copy; {new Date().getFullYear()} DJ Duels
-      </footer>
+      <Footer />
 
       <CreateDuelModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
       <JoinDuelModal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)} />

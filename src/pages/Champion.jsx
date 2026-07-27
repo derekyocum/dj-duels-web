@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
 import BracketPanel from '../components/BracketPanel'
+import Footer from '../components/Footer'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
 const COLOR_BG = {
@@ -329,7 +330,7 @@ function Champion() {
         )}
       </main>
 
-      <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
+      <Footer>
         {closeAt && secondsLeft !== null && (
           <div className={`flex items-center justify-center gap-3 mb-3 transition-opacity duration-500 ${secondsLeft < 30 ? 'opacity-50' : 'opacity-20'}`}>
             <span className="text-[10px] text-text-muted">lobby closes in</span>
@@ -344,8 +345,7 @@ function Champion() {
             </span>
           </div>
         )}
-        &copy; {new Date().getFullYear()} DJ Duels
-      </footer>
+      </Footer>
     </div>
   )
 }

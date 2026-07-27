@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
+import Footer from '../components/Footer'
 import { signup, confirmSignup, resendConfirmation } from '../services/authService'
 
 const RESEND_COOLDOWN_SECONDS = 30
@@ -217,6 +218,8 @@ function Signup() {
             </form>
           </div>
         )}
+
+        <Footer className="mt-8 py-0" />
       </div>
     </div>
   )

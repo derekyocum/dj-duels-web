@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
+import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 
 const inputClass = "w-full bg-black/30 border border-white/10 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue/70 focus:ring-2 focus:ring-neon-blue/25 focus:outline-none transition-colors"
@@ -117,6 +118,8 @@ function Login() {
             Sign up
           </Link>
         </p>
+
+        <Footer className="mt-8 py-0" />
       </div>
     </div>
   )

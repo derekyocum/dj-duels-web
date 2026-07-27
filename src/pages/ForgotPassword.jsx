@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
+import Footer from '../components/Footer'
 import { forgotPassword, resetPassword } from '../services/authService'
 
 function ForgotPassword() {
@@ -137,6 +138,8 @@ function ForgotPassword() {
             Back to sign in
           </Link>
         </p>
+
+        <Footer className="mt-8 py-0" />
       </div>
     </div>
   )

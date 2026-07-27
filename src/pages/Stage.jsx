@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import AppNav from '../components/AppNav'
 import Reconnecting from '../components/Reconnecting'
+import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
@@ -511,9 +512,7 @@ function Stage() {
         </div>
       </div>
 
-      <footer className="relative z-10 text-center py-4 text-text-muted text-xs">
-        &copy; {new Date().getFullYear()} DJ Duels
-      </footer>
+      <Footer className="py-4" />
     </div>
   )
 }
