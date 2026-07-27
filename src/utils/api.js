@@ -44,6 +44,36 @@ export async function fetchYouTubeTrack(url) {
   }
 }
 
+// In-site search, both app-level (Spotify Client Credentials / a server-side
+// YouTube API key) -- never routes through anyone's connected-account token,
+// since search results are public data. See TrackController on the backend.
+export async function searchSpotifyTracks(query) {
+  const response = await fetch(`${API_BASE}/api/tracks/spotify/search?q=${encodeURIComponent(query)}`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Search failed')
+  return data.map((t) => ({ ...t, source: 'spotify' }))
+}
+
+export async function searchYouTubeVideos(query) {
+  const response = await fetch(`${API_BASE}/api/tracks/youtube/search?q=${encodeURIComponent(query)}`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Search failed')
+  return data.map((v) => ({
+    id: v.videoId,
+    name: v.title,
+    artist: v.artist,
+    album: 'YouTube',
+    albumArtUrl: v.thumbnailUrl,
+    videoId: v.videoId,
+    youtubeUrl: v.youtubeUrl,
+    source: 'youtube',
+  }))
+}
+
 export async function fetchPlatformStatus() {
   const response = await fetch(`${API_BASE}/api/platforms/status`, {
     headers: authHeaders(),

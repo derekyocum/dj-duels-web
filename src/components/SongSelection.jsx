@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import CountdownTimer from './CountdownTimer'
 import { SpotifyIcon, YouTubeIcon } from './PlatformIcons'
-import { fetchSpotifyTrack, fetchYouTubeTrack } from '../utils/api'
+import { fetchSpotifyTrack, fetchYouTubeTrack, searchSpotifyTracks, searchYouTubeVideos } from '../utils/api'
 
 function detectPlatform(url) {
   if (url.includes('spotify.com/track/')) return 'spotify'
@@ -14,16 +14,66 @@ const PLATFORM_ICON = {
   youtube: { Icon: YouTubeIcon, color: '#FF0000' },
 }
 
+function TrackPreview({ trackInfo }) {
+  const previewIcon = PLATFORM_ICON[trackInfo.source]
+  return (
+    <div className="w-full bg-card/60 border border-neon-blue/20 rounded-xl p-4 mb-6 flex items-center gap-4">
+      {trackInfo.albumArtUrl && (
+        <img src={trackInfo.albumArtUrl} alt={trackInfo.album || trackInfo.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-text-primary font-semibold text-sm truncate">{trackInfo.name}</p>
+        <p className="text-text-secondary text-xs truncate">{trackInfo.artist}</p>
+        {trackInfo.source === 'spotify' && <p className="text-text-muted text-xs truncate">{trackInfo.album}</p>}
+      </div>
+      {previewIcon && <previewIcon.Icon className="w-5 h-5 shrink-0" style={{ color: previewIcon.color }} />}
+    </div>
+  )
+}
+
+function SearchResultRow({ track, selected, onSelect }) {
+  const { Icon, color } = PLATFORM_ICON[track.source]
+  return (
+    <button
+      onClick={onSelect}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer ${
+        selected ? 'bg-neon-blue/15 border border-neon-blue/40' : 'border border-transparent hover:bg-card-hover'
+      }`}
+    >
+      {track.albumArtUrl ? (
+        <img src={track.albumArtUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
+      ) : (
+        <div className="w-10 h-10 rounded-md bg-card-hover shrink-0 flex items-center justify-center text-text-muted text-xs">🎵</div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-text-primary text-sm font-medium truncate">{track.name}</p>
+        <p className="text-text-muted text-xs truncate">{track.artist}</p>
+      </div>
+      <Icon className="w-4 h-4 shrink-0" style={{ color }} />
+    </button>
+  )
+}
+
 function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabel, onLockIn }) {
-  const [songLink, setSongLink] = useState('')
+  const [mode, setMode] = useState('search') // 'search' | 'paste'
   const [trackInfo, setTrackInfo] = useState(null)
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const debounceRef = useRef(null)
+
+  // Paste-link mode state
+  const [songLink, setSongLink] = useState('')
+  const [pasteLoading, setPasteLoading] = useState(false)
+  const pasteDebounceRef = useRef(null)
+
+  // Search mode state
+  const [searchPlatform, setSearchPlatform] = useState('spotify')
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const searchDebounceRef = useRef(null)
 
   const handleLinkChange = (value) => {
     setSongLink(value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (pasteDebounceRef.current) clearTimeout(pasteDebounceRef.current)
 
     const trimmed = value.trim()
     const platform = detectPlatform(trimmed)
@@ -34,30 +84,72 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
       return
     }
 
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true)
+    pasteDebounceRef.current = setTimeout(async () => {
+      setPasteLoading(true)
       setError(null)
       try {
-        const data = platform === 'spotify'
-          ? await fetchSpotifyTrack(trimmed)
-          : await fetchYouTubeTrack(trimmed)
+        const data = platform === 'spotify' ? await fetchSpotifyTrack(trimmed) : await fetchYouTubeTrack(trimmed)
         setTrackInfo(data)
       } catch (e) {
         setError(e.message)
         setTrackInfo(null)
       } finally {
-        setLoading(false)
+        setPasteLoading(false)
       }
     }, 500)
   }
 
-  const handleLockIn = () => {
-    if (trackInfo && onLockIn) {
-      onLockIn(trackInfo)
+  const handleQueryChange = (value) => {
+    setQuery(value)
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+
+    const trimmed = value.trim()
+    if (!trimmed) {
+      setResults([])
+      setError(null)
+      return
+    }
+
+    searchDebounceRef.current = setTimeout(async () => {
+      setSearchLoading(true)
+      setError(null)
+      try {
+        const data = searchPlatform === 'spotify' ? await searchSpotifyTracks(trimmed) : await searchYouTubeVideos(trimmed)
+        setResults(data)
+      } catch (e) {
+        setError(e.message)
+        setResults([])
+      } finally {
+        setSearchLoading(false)
+      }
+    }, 400)
+  }
+
+  const switchSearchPlatform = (platform) => {
+    setSearchPlatform(platform)
+    setResults([])
+    setError(null)
+    // Re-run the current query against the new platform immediately.
+    if (query.trim()) {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+      setSearchLoading(true)
+      const fn = platform === 'spotify' ? searchSpotifyTracks : searchYouTubeVideos
+      fn(query.trim())
+        .then(setResults)
+        .catch((e) => setError(e.message))
+        .finally(() => setSearchLoading(false))
     }
   }
 
-  const previewIcon = trackInfo ? PLATFORM_ICON[trackInfo.source] : null
+  const switchMode = (next) => {
+    setMode(next)
+    setTrackInfo(null)
+    setError(null)
+  }
+
+  const handleLockIn = () => {
+    if (trackInfo && onLockIn) onLockIn(trackInfo)
+  }
 
   return (
     <div className="flex-1 flex flex-col items-center px-6 py-8 max-w-lg mx-auto w-full">
@@ -74,65 +166,127 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
         <CountdownTimer timeLeft={timeLeft} totalTime={totalTime} />
       </div>
 
-      <div className="w-full mb-6">
-        <input
-          type="url"
-          value={songLink}
-          onChange={(e) => handleLinkChange(e.target.value)}
-          placeholder="Paste a Spotify, YouTube, or Apple Music link"
-          className="w-full bg-card/60 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
-        />
+      {/* Search vs paste-link mode toggle */}
+      <div className="w-full flex gap-1.5 mb-4 p-1 bg-card/60 rounded-xl border border-text-muted/10">
+        <button
+          onClick={() => switchMode('search')}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
+            mode === 'search' ? 'bg-neon-blue/20 text-neon-blue' : 'text-text-muted hover:text-text-secondary'
+          }`}
+        >
+          🔍 Search
+        </button>
+        <button
+          onClick={() => switchMode('paste')}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
+            mode === 'paste' ? 'bg-neon-blue/20 text-neon-blue' : 'text-text-muted hover:text-text-secondary'
+          }`}
+        >
+          🔗 Paste Link
+        </button>
       </div>
 
-      {loading && (
-        <div className="w-full bg-card/60 border border-text-muted/15 rounded-xl p-4 mb-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-card-hover animate-pulse" />
-          <div className="flex-1">
-            <div className="h-4 bg-card-hover rounded w-3/4 mb-1.5 animate-pulse" />
-            <div className="h-3 bg-card-hover/60 rounded w-1/2 animate-pulse" />
+      {mode === 'search' ? (
+        <>
+          {/* Platform toggle */}
+          <div className="w-full flex gap-2 mb-3">
+            {['spotify', 'youtube'].map((p) => {
+              const { Icon, color } = PLATFORM_ICON[p]
+              const active = searchPlatform === p
+              return (
+                <button
+                  key={p}
+                  onClick={() => switchSearchPlatform(p)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg border transition-colors cursor-pointer ${
+                    active ? 'border-neon-blue/40 bg-neon-blue/10' : 'border-text-muted/15 hover:bg-card-hover'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" style={{ color }} />
+                  <span className={active ? 'text-text-primary' : 'text-text-muted'}>{p === 'spotify' ? 'Spotify' : 'YouTube'}</span>
+                </button>
+              )
+            })}
           </div>
+
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            placeholder={`Search ${searchPlatform === 'spotify' ? 'Spotify' : 'YouTube'} for a song...`}
+            className="w-full bg-card/60 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors mb-3"
+          />
+
+          {searchLoading && (
+            <div className="w-full space-y-2 mb-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="w-10 h-10 rounded-md bg-card-hover animate-pulse shrink-0" />
+                  <div className="flex-1">
+                    <div className="h-3.5 bg-card-hover rounded w-3/4 mb-1.5 animate-pulse" />
+                    <div className="h-3 bg-card-hover/60 rounded w-1/2 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!searchLoading && results.length > 0 && (
+            <div className="w-full max-h-72 overflow-y-auto space-y-1 mb-3 -mx-1 px-1">
+              {results.map((track) => (
+                <SearchResultRow
+                  key={track.id}
+                  track={track}
+                  selected={trackInfo?.id === track.id && trackInfo?.source === track.source}
+                  onSelect={() => setTrackInfo(track)}
+                />
+              ))}
+            </div>
+          )}
+
+          {!searchLoading && query.trim() && results.length === 0 && !error && (
+            <p className="text-text-muted text-sm text-center mb-3">No results for "{query.trim()}"</p>
+          )}
+        </>
+      ) : (
+        <div className="w-full mb-3">
+          <input
+            type="url"
+            value={songLink}
+            onChange={(e) => handleLinkChange(e.target.value)}
+            placeholder="Paste a Spotify or YouTube link"
+            className="w-full bg-card/60 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
+          />
+          {pasteLoading && (
+            <div className="w-full bg-card/60 border border-text-muted/15 rounded-xl p-4 mt-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-card-hover animate-pulse" />
+              <div className="flex-1">
+                <div className="h-4 bg-card-hover rounded w-3/4 mb-1.5 animate-pulse" />
+                <div className="h-3 bg-card-hover/60 rounded w-1/2 animate-pulse" />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {error && (
-        <div className="w-full bg-neon-pink/10 border border-neon-pink/20 rounded-xl px-4 py-3 mb-6">
+        <div className="w-full bg-neon-pink/10 border border-neon-pink/20 rounded-xl px-4 py-3 mb-3">
           <p className="text-neon-pink text-sm">{error}</p>
         </div>
       )}
 
-      {trackInfo && !loading && (
-        <div className="w-full bg-card/60 border border-neon-blue/20 rounded-xl p-4 mb-6 flex items-center gap-4">
-          {trackInfo.albumArtUrl && (
-            <img
-              src={trackInfo.albumArtUrl}
-              alt={trackInfo.album || trackInfo.name}
-              className="w-14 h-14 rounded-lg object-cover shrink-0"
-            />
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-text-primary font-semibold text-sm truncate">{trackInfo.name}</p>
-            <p className="text-text-secondary text-xs truncate">{trackInfo.artist}</p>
-            {trackInfo.source === 'spotify' && (
-              <p className="text-text-muted text-xs truncate">{trackInfo.album}</p>
-            )}
-          </div>
-          {previewIcon && <previewIcon.Icon className="w-5 h-5 shrink-0" style={{ color: previewIcon.color }} />}
-        </div>
-      )}
+      {trackInfo && !pasteLoading && <TrackPreview trackInfo={trackInfo} />}
 
       <button
         onClick={handleLockIn}
         disabled={!trackInfo}
         className={`w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 ${
-          trackInfo
-            ? 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)]'
-            : 'opacity-40 cursor-not-allowed'
+          trackInfo ? 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)]' : 'opacity-40 cursor-not-allowed'
         }`}
       >
         Lock In
       </button>
       <p className="text-text-muted text-xs mt-2">
-        {trackInfo ? 'Ready to lock in your track!' : 'Select or paste a track to lock in'}
+        {trackInfo ? 'Ready to lock in your track!' : 'Search or paste a link to pick your track'}
       </p>
     </div>
   )
