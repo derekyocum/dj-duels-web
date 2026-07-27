@@ -110,6 +110,29 @@ export async function logout() {
   localStorage.removeItem(USER_KEY)
 }
 
+// Unlike logout(), this is NOT best-effort — a failed deletion (e.g. an
+// expired session) must surface to the caller instead of silently clearing
+// local state and looking like it succeeded.
+export async function deleteAccount() {
+  const user = getCurrentUser()
+  if (!user?.accessToken) throw new Error('Not signed in')
+
+  let res
+  try {
+    res = await fetch(`${API_BASE}/api/auth/account`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${user.accessToken}` },
+    })
+  } catch {
+    throw new Error('Cannot reach the server — check your connection.')
+  }
+
+  const isJson = res.headers.get('content-type')?.includes('application/json')
+  const data = isJson ? await res.json() : null
+  if (!res.ok) throw new Error(data?.error || friendlyError(res.status))
+  localStorage.removeItem(USER_KEY)
+}
+
 export function getCurrentUser() {
   try {
     const raw = localStorage.getItem(USER_KEY)

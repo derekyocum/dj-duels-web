@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import {
   login as authLogin,
   logout as authLogout,
+  deleteAccount as authDeleteAccount,
   getCurrentUser,
   refreshAccessToken,
 } from '../services/authService'
@@ -25,6 +26,15 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     await authLogout()
+    setSessionExpired(false)
+    setUser(null)
+  }, [])
+
+  // Unlike logout, lets a failure (e.g. an expired session) propagate to the
+  // caller instead of swallowing it -- the page needs to know deletion didn't
+  // actually happen so it can tell the user, not just clear state.
+  const deleteAccount = useCallback(async () => {
+    await authDeleteAccount()
     setSessionExpired(false)
     setUser(null)
   }, [])
@@ -61,7 +71,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, logoutSessionExpired, sessionExpired, isAuthenticated: !!user }}
+      value={{ user, login, logout, deleteAccount, logoutSessionExpired, sessionExpired, isAuthenticated: !!user }}
     >
       {children}
     </AuthContext.Provider>

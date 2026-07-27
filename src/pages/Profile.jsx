@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
 import PlatformButton from '../components/PlatformButton'
+import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform, fetchMyStats } from '../utils/api'
 
@@ -20,13 +21,16 @@ async function loadPlatformStatus() {
 }
 
 function Profile() {
-  const { user, logout } = useAuth()
+  const { user, logout, deleteAccount } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [platforms, setPlatforms] = useState([])
   const [connectingPlatform, setConnectingPlatform] = useState(null)
   const [stats, setStats] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
 
   const justConnected = searchParams.get('connected')
   const connectError = searchParams.get('connect_error')
@@ -73,6 +77,18 @@ function Profile() {
   const handleLogout = async () => {
     await logout()
     navigate('/')
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteAccount()
+      navigate('/')
+    } catch (err) {
+      setDeleting(false)
+      setDeleteError(err.message)
+    }
   }
 
   const initial = user?.username?.charAt(0).toUpperCase() ?? '?'
@@ -200,12 +216,71 @@ function Profile() {
             </div>
           </div>
 
+          {/* Danger zone */}
+          <div className="bg-card/60 border border-neon-pink/20 rounded-2xl overflow-hidden mt-8">
+            <div className="px-6 py-4 border-b border-neon-pink/10">
+              <h2 className="text-neon-pink font-semibold text-sm">Danger Zone</h2>
+            </div>
+            <div className="px-6 py-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-text-primary text-sm font-medium">Delete account</p>
+                <p className="text-text-muted text-xs mt-0.5">Permanently deletes your account, stats, and connections.</p>
+              </div>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg border border-neon-pink/30 text-neon-pink hover:bg-neon-pink/10 transition-colors cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+
         </div>
       </main>
 
-      <footer className="relative z-10 text-center py-6 text-text-muted text-xs">
-        &copy; {new Date().getFullYear()} DJ Duels
-      </footer>
+      <Footer />
+
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4"
+          onClick={() => !deleting && setShowDeleteConfirm(false)}
+        >
+          <div
+            className="bg-dark-surface border border-neon-pink/25 rounded-2xl p-8 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h2 className="text-xl font-bold text-text-primary mb-2">Delete account?</h2>
+            <p className="text-text-secondary text-sm mb-5">
+              This permanently deletes your account, including your stats, trophies, and any connected Spotify/YouTube accounts. This cannot be undone.
+            </p>
+
+            {deleteError && (
+              <div className="bg-neon-pink/10 border border-neon-pink/20 rounded-xl px-4 py-3 mb-5">
+                <p className="text-neon-pink text-sm">{deleteError}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 py-3 text-sm font-semibold rounded-full border border-text-muted/30 text-text-secondary hover:text-text-primary transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex-1 py-3 text-sm font-bold rounded-full bg-neon-pink text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Deleting...' : 'Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
