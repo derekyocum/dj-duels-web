@@ -50,6 +50,10 @@ export async function confirmSignup(username, code) {
   await post('/api/auth/confirm', { username, code })
 }
 
+export async function resendConfirmation(username) {
+  await post('/api/auth/resend-confirmation', { username })
+}
+
 export async function login(username, password) {
   if (!username || !password) throw new Error('Username and password are required')
   const data = await post('/api/auth/login', { username, password })

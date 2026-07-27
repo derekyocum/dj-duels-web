@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
-import { signup, confirmSignup } from '../services/authService'
+import { signup, confirmSignup, resendConfirmation } from '../services/authService'
+
+const RESEND_COOLDOWN_SECONDS = 30
 
 function Signup() {
   const navigate = useNavigate()
@@ -19,7 +21,19 @@ function Signup() {
   const [code, setCode] = useState('')
 
   const [error, setError] = useState(null)
+  const [info, setInfo] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
+
+  // Countdown so "Resend code" can't be hammered -- each real resend also
+  // invalidates the previous code, so spamming it just creates more
+  // confusion about which code (if any) is still valid.
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const id = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000)
+    return () => clearInterval(id)
+  }, [resendCooldown])
 
   const handleSignup = async (e) => {
     e.preventDefault()
@@ -33,6 +47,7 @@ function Signup() {
       await signup(username.trim(), email, password)
       setPendingUsername(username.trim())
       setStep('confirm')
+      setResendCooldown(RESEND_COOLDOWN_SECONDS)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -43,6 +58,7 @@ function Signup() {
   const handleConfirm = async (e) => {
     e.preventDefault()
     setError(null)
+    setInfo(null)
     setLoading(true)
     try {
       await confirmSignup(pendingUsername, code.trim())
@@ -51,6 +67,22 @@ function Signup() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    setError(null)
+    setInfo(null)
+    setResendLoading(true)
+    try {
+      await resendConfirmation(pendingUsername)
+      setCode('')
+      setInfo('A new code is on its way — the old one no longer works.')
+      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -132,10 +164,18 @@ function Signup() {
                 <label className={labelClass}>Confirmation Code</label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  // Strip anything but digits -- a pasted code often drags along
+                  // surrounding email text ("Your code is: 123456") or a stray
+                  // space, which otherwise reads as "the code was wrong" even
+                  // when the actual 6 digits were correct. No native maxLength
+                  // here: that truncates the raw paste to 6 characters BEFORE
+                  // this handler ever sees it, so "Your code is: 123456" becomes
+                  // "Your c" and strips to nothing -- the slice(0, 6) below
+                  // enforces the length after stripping instead.
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Enter 6-digit code"
-                  maxLength={6}
                   required
                   className={`${sharedInputClass} text-center tracking-[0.4em] text-lg font-mono`}
                 />
@@ -146,13 +186,31 @@ function Signup() {
                   <p className="text-neon-pink text-sm">{error}</p>
                 </div>
               )}
+              {info && !error && (
+                <div className="bg-neon-blue/10 border border-neon-blue/20 rounded-xl px-4 py-3">
+                  <p className="text-neon-blue text-sm">{info}</p>
+                </div>
+              )}
 
               <button type="submit" disabled={loading}
                 className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2">
                 {loading ? 'Verifying...' : 'Confirm Account'}
               </button>
 
-              <button type="button" onClick={() => { setStep('form'); setError(null) }}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendLoading || resendCooldown > 0}
+                className="w-full py-2 text-sm text-neon-blue hover:text-neon-blue/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-muted"
+              >
+                {resendLoading
+                  ? 'Sending...'
+                  : resendCooldown > 0
+                    ? `Resend code (${resendCooldown}s)`
+                    : "Didn't get a code? Resend"}
+              </button>
+
+              <button type="button" onClick={() => { setStep('form'); setError(null); setInfo(null) }}
                 className="w-full py-2 text-sm text-text-muted hover:text-text-secondary transition-colors cursor-pointer">
                 ← Back
               </button>
