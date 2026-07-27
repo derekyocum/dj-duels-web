@@ -46,6 +46,8 @@ function Footer({ children, className = 'py-6' }) {
         </a>
       </div>
       &copy; {new Date().getFullYear()} DJ Duels
+      <span className="mx-2 text-text-muted/30">&middot;</span>
+      <a href="/privacy" className="text-text-muted/60 hover:text-text-secondary transition-colors">Privacy</a>
     </footer>
   )
 }
