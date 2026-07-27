@@ -135,9 +135,9 @@ function Landing() {
 
         <button
           onClick={handleFindMatchClick}
-          className="mt-4 flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-full border border-neon-green/30 text-neon-green hover:bg-neon-green/10 hover:border-neon-green/50 transition-all duration-300 cursor-pointer"
+          className="mt-4 px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-purple hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
         >
-          🎧 Find a Match
+          Find a Match
         </button>
         <p className="text-text-muted text-xs mt-2">No code needed — we&apos;ll pair you with 3 other players</p>
 
