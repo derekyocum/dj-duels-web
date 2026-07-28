@@ -4,6 +4,7 @@ import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
 import BracketPanel from '../components/BracketPanel'
 import Footer from '../components/Footer'
+import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
 const COLOR_BG = {
@@ -118,6 +119,7 @@ function Champion() {
   const { duelId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const {
     champion, trackHistory = {}, allPlayers = [],
     loser, winnerVotes, loserVotes, winnerTrophies, bracket,
@@ -125,6 +127,8 @@ function Champion() {
   // -1 means the server couldn't record the win (DynamoDB blip); treat as unknown.
   const showTrophies = typeof winnerTrophies === 'number' && winnerTrophies >= 0
   const tracks = trackHistory[champion?.name] || []
+  // Server is the source of truth for who's host -- same pattern Lobby uses.
+  const isHost = allPlayers.find((p) => p.name === user?.username)?.isHost ?? false
 
   // Tallies keyed by name so the participants row can attach them to the two
   // battlers; spectators simply have none. Optional on purpose -- a resync or
@@ -137,6 +141,10 @@ function Champion() {
   const [closeAt, setCloseAt] = useState(null)
   const [secondsLeft, setSecondsLeft] = useState(null)
   const [showFireworks, setShowFireworks] = useState(true)
+  // 'idle' | 'waiting' (non-host, clicked, server is waiting on the host) |
+  // 'starting' (host, clicked -- REMATCH should arrive almost immediately)
+  const [playAgainState, setPlayAgainState] = useState('idle')
+  const [optedInCount, setOptedInCount] = useState(0)
   const gameSentRef = useRef(false)
   const autoScrollRef = useRef(null)
 
@@ -164,19 +172,31 @@ function Champion() {
       setCloseAt(event.payload.closeAt)
     } else if (event.type === 'SESSION_CLOSED' || event.type === 'SESSION_EXPIRED') {
       navigate('/')
+    } else if (event.type === 'PLAY_AGAIN_UPDATE') {
+      setOptedInCount(event.payload.optedIn?.length ?? 0)
     } else if (event.type === 'REMATCH') {
+      // Play Again is per-player opt-in now -- the roster is only whoever
+      // had clicked by the time the host launched it, so someone who never
+      // clicked (or was too slow) isn't part of the new lobby and shouldn't
+      // follow everyone else in.
+      const iAmIncluded = event.payload.players?.some((p) => p.name === user?.username)
+      if (!iAmIncluded) {
+        navigate('/')
+        return
+      }
       // Carry maxPlayers through so Lobby's initial render (before its own
       // lobby/join round-trip lands) doesn't briefly default to 2 slots.
       navigate(`/lobby/${duelId}?players=${event.payload.maxPlayers}`)
     }
-  }, [navigate, duelId])
+  }, [navigate, duelId, user?.username])
 
   const { send, isConnected } = useDuelSocket()
   useDuelEvents(handleGameEvent)
 
   const handlePlayAgain = useCallback(() => {
     send('game/play-again', { duelId })
-  }, [send, duelId])
+    setPlayAgainState(isHost ? 'starting' : 'waiting')
+  }, [send, duelId, isHost])
 
   useEffect(() => {
     if (!champion) navigate('/', { replace: true })
@@ -284,12 +304,16 @@ function Champion() {
 
         <div className="mt-10 flex flex-col items-center gap-3">
           <div className="flex flex-col sm:flex-row items-center gap-3">
-            {/* Either player can start a rematch -- server enforces membership, not host status */}
+            {/* Play Again is per-player opt-in now: clicking just registers
+                interest -- only the host's click actually launches the
+                rematch (with whoever's opted in by then), same authority
+                lobby/start already has. */}
             <button
               onClick={handlePlayAgain}
-              className="px-8 py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-6px_rgba(0,128,255,0.5)] hover:shadow-[0_0_40px_-4px_rgba(0,128,255,0.7)] transition-all duration-300 cursor-pointer"
+              disabled={playAgainState !== 'idle'}
+              className="px-8 py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-6px_rgba(0,128,255,0.5)] hover:shadow-[0_0_40px_-4px_rgba(0,128,255,0.7)] transition-all duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none"
             >
-              Play Again
+              {playAgainState === 'waiting' ? 'Waiting for Host...' : playAgainState === 'starting' ? 'Starting...' : 'Play Again'}
             </button>
             <button
               onClick={() => navigate('/')}
@@ -298,6 +322,11 @@ function Champion() {
               Back to Home
             </button>
           </div>
+          {optedInCount > 0 && playAgainState === 'waiting' && (
+            <p className="text-text-muted text-xs">
+              {optedInCount} {optedInCount === 1 ? 'player has' : 'players have'} opted in so far
+            </p>
+          )}
         </div>
 
         {/* Participants row -- everyone from the lobby; battlers show their tallies */}
