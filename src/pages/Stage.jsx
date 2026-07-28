@@ -31,28 +31,68 @@ function loadSpotifyIframeApi() {
 // practice. Spotify does ship an official iFrame API for exactly this
 // (developer.spotify.com/documentation/embeds/references/iframe-api): create
 // a controller against a container element, then call .play() once it
-// reports 'ready'. Browsers generally allow this because it's a same-tab
-// user-initiated flow (the player already clicked Lock In/is mid-duel), not
-// a cold autoplay attempt on page load.
+// reports 'ready'. This correctly gets allow="autoplay; ..." delegated to the
+// generated iframe automatically (confirmed via DOM inspection), so a missing
+// permission isn't the issue.
+//
+// The real constraint is browser autoplay-gesture policy, and it varies a lot
+// by browser: our .play() call fires from an async SDK 'ready' callback, not
+// synchronously inside a click handler, which some browsers (Safari in
+// particular -- it requires the play() call to be in the SAME call stack as
+// the originating user gesture, no async gap allowed) will silently refuse
+// regardless of any earlier click on the page. There's no code-level way to
+// force a guarantee here across every browser, so instead of a silently
+// stalled player we detect the stall (no playback_update reporting
+// isPaused:false shortly after calling play()) and surface a one-tap
+// fallback -- worst case this degrades to a single manual tap instead of
+// nothing happening.
 function SpotifyEmbed({ trackId }) {
   const containerRef = useRef(null)
+  const controllerRef = useRef(null)
+  const isPlayingRef = useRef(false)
+  const [needsTap, setNeedsTap] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    setNeedsTap(false)
+    isPlayingRef.current = false
     loadSpotifyIframeApi().then((IFrameAPI) => {
       if (cancelled || !containerRef.current) return
       IFrameAPI.createController(
         containerRef.current,
         { uri: `spotify:track:${trackId}`, width: '100%', height: '352' },
         (EmbedController) => {
-          EmbedController.addListener('ready', () => EmbedController.play())
+          if (cancelled) return
+          controllerRef.current = EmbedController
+          EmbedController.addListener('playback_update', (e) => {
+            isPlayingRef.current = !e.data.isPaused
+            if (!e.data.isPaused) setNeedsTap(false)
+          })
+          EmbedController.addListener('ready', () => {
+            EmbedController.play()
+            setTimeout(() => {
+              if (!cancelled && !isPlayingRef.current) setNeedsTap(true)
+            }, 1200)
+          })
         }
       )
     })
-    return () => { cancelled = true }
+    return () => { cancelled = true; controllerRef.current = null }
   }, [trackId])
 
-  return <div ref={containerRef} />
+  return (
+    <div className="relative">
+      <div ref={containerRef} />
+      {needsTap && (
+        <button
+          onClick={() => { controllerRef.current?.play(); setNeedsTap(false) }}
+          className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 text-white font-semibold text-sm rounded-2xl cursor-pointer"
+        >
+          <span className="text-xl">▶</span> Tap to play
+        </button>
+      )}
+    </div>
+  )
 }
 
 const COLOR_BG = {
