@@ -54,7 +54,6 @@ function SpotifyEmbed({ trackId }) {
 
   useEffect(() => {
     let cancelled = false
-    setNeedsTap(false)
     isPlayingRef.current = false
     loadSpotifyIframeApi().then((IFrameAPI) => {
       if (cancelled || !containerRef.current) return
