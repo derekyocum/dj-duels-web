@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import MusicNotes from '../components/MusicNotes'
 import AppNav from '../components/AppNav'
@@ -6,6 +6,54 @@ import Reconnecting from '../components/Reconnecting'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
+
+// Module-level singleton: the Spotify iFrame API script should only ever be
+// injected once per page, and every mount (including the key-forced remount
+// for each new track) awaits the SAME promise for the IFrameAPI object --
+// whichever mount asks first triggers the load, everyone else just waits on
+// (or immediately gets, if it already resolved) the same result.
+let spotifyIframeApiPromise = null
+function loadSpotifyIframeApi() {
+  if (spotifyIframeApiPromise) return spotifyIframeApiPromise
+  spotifyIframeApiPromise = new Promise((resolve) => {
+    window.onSpotifyIframeApiReady = (IFrameAPI) => resolve(IFrameAPI)
+    const script = document.createElement('script')
+    script.src = 'https://open.spotify.com/embed/iframe-api/v1'
+    script.async = true
+    document.body.appendChild(script)
+  })
+  return spotifyIframeApiPromise
+}
+
+// There's no documented/reliable autoplay URL param for Spotify's classic
+// embed (unlike YouTube's real autoplay=1) -- the &autoplay=1 the old <iframe
+// src> carried was never guaranteed to do anything, and evidently doesn't in
+// practice. Spotify does ship an official iFrame API for exactly this
+// (developer.spotify.com/documentation/embeds/references/iframe-api): create
+// a controller against a container element, then call .play() once it
+// reports 'ready'. Browsers generally allow this because it's a same-tab
+// user-initiated flow (the player already clicked Lock In/is mid-duel), not
+// a cold autoplay attempt on page load.
+function SpotifyEmbed({ trackId }) {
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    let cancelled = false
+    loadSpotifyIframeApi().then((IFrameAPI) => {
+      if (cancelled || !containerRef.current) return
+      IFrameAPI.createController(
+        containerRef.current,
+        { uri: `spotify:track:${trackId}`, width: '100%', height: '352' },
+        (EmbedController) => {
+          EmbedController.addListener('ready', () => EmbedController.play())
+        }
+      )
+    })
+    return () => { cancelled = true }
+  }, [trackId])
+
+  return <div ref={containerRef} />
+}
 
 const COLOR_BG = {
   'neon-blue': 'bg-neon-blue/20',
@@ -386,13 +434,7 @@ function Stage() {
                 </div>
               ) : phase === 'playing' && isSpotify ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
-                  <iframe
-                    key={current.track.id}
-                    src={`https://open.spotify.com/embed/track/${current.track.id}?utm_source=generator&theme=0&autoplay=1`}
-                    title={current.track.name}
-                    className="w-full h-[352px]"
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                  />
+                  <SpotifyEmbed key={current.track.id} trackId={current.track.id} />
                 </div>
               ) : null}
 
