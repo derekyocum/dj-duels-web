@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
-import Logo from '../components/Logo'
+import AppNav from '../components/AppNav'
 import Footer from '../components/Footer'
 import { joinMatchmaking, matchmakingStatus, cancelMatchmaking } from '../utils/api'
 
@@ -81,14 +81,7 @@ function Matchmaking() {
     <div className="relative min-h-svh flex flex-col">
       <AppBackground />
 
-      <nav className="relative z-10 flex items-center px-6 py-5 md:px-12">
-        <div className="flex items-center gap-2">
-          <Logo className="w-7 h-7" />
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-neon-blue">Duels</span>
-          </span>
-        </div>
-      </nav>
+      <AppNav />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
         {error ? (

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router'
 import AppBackground from '../components/AppBackground'
-import Logo from '../components/Logo'
+import AppNav from '../components/AppNav'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { fetchLeaderboard, fetchMyStats } from '../utils/api'
@@ -60,20 +59,7 @@ function Leaderboard() {
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
       <AppBackground />
 
-      <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
-        <a href="/" className="flex items-center gap-2 no-underline">
-          <Logo className="w-7 h-7" />
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-neon-blue">Duels</span>
-          </span>
-        </a>
-        <Link
-          to="/profile"
-          className="px-4 py-1.5 text-sm font-semibold rounded-full border border-text-muted/30 text-text-muted hover:text-text-secondary hover:border-text-muted/50 transition-colors"
-        >
-          Profile
-        </Link>
-      </nav>
+      <AppNav />
 
       <main className="relative z-10 flex-1 flex flex-col items-center px-6 py-8">
         <div className="w-full max-w-md">

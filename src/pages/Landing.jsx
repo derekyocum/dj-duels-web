@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
-import Logo from '../components/Logo'
+import AppNav from '../components/AppNav'
 import CreateDuelModal from '../components/CreateDuelModal'
 import JoinDuelModal from '../components/JoinDuelModal'
 import Footer from '../components/Footer'
@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext'
 function Landing() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
-  const { user, logout, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
   // Signed-out users used to be able to pick a player count and see a
@@ -45,48 +45,7 @@ function Landing() {
     <div className="relative min-h-svh flex flex-col">
       <AppBackground />
 
-      <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12">
-        <div className="flex items-center gap-2">
-          <Logo className="w-7 h-7" />
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-neon-blue">Duels</span>
-          </span>
-        </div>
-        {isAuthenticated ? (
-          <div className="flex items-center gap-3">
-            <Link
-              to="/profile"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full glass hover:glass-hover transition-colors"
-            >
-              <div className="w-6 h-6 rounded-full bg-neon-blue/20 border border-neon-blue/40 flex items-center justify-center">
-                <span className="text-neon-blue text-xs font-bold">{user.username.charAt(0).toUpperCase()}</span>
-              </div>
-              <span className="text-text-secondary text-sm font-medium">{user.username}</span>
-            </Link>
-            <button
-              onClick={() => { logout(); navigate('/') }}
-              className="px-4 py-1.5 text-sm font-semibold rounded-full border border-text-muted/30 text-text-muted hover:text-text-secondary hover:border-text-muted/50 transition-colors cursor-pointer"
-            >
-              Sign Out
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Link
-              to="/login"
-              className="px-4 py-2 text-sm font-semibold rounded-full text-text-secondary hover:text-text-primary transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/signup"
-              className="px-5 py-2 text-sm font-semibold rounded-full border border-neon-purple/40 text-neon-purple hover:bg-neon-purple/10 hover:border-neon-purple/60 transition-colors"
-            >
-              Sign Up
-            </Link>
-          </div>
-        )}
-      </nav>
+      <AppNav />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center py-16">
         <div className="mb-5">
