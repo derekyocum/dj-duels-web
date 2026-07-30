@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
 import { Client } from '@stomp/stompjs'
-import { refreshAccessToken } from '../services/authService'
+import { refreshAccessToken, REFRESH_EXPIRED } from '../services/authService'
+
+// Safety net only, not the primary "is this session dead" signal any more --
+// see the onStompError comment below. A persistent loop that isn't really
+// about the token (e.g. the server closing for an unrelated reason whose
+// message happens to mention "authorization") shouldn't retry forever.
+const MAX_TOKEN_RETRY_ATTEMPTS = 5
 
 // VITE_WS_URL may be just the API origin (e.g. wss://api.dj-duels.com) or the
 // full broker URL. Normalize so it always targets the STOMP endpoint at /ws.
@@ -35,10 +41,10 @@ export function DuelSocketProvider({ duelId, children }) {
   const [isConnected, setIsConnected] = useState(false)
   const listenersRef = useRef(new Set())
   const outboxRef = useRef([])
-  // Caps consecutive refresh-triggered reconnect attempts so a token that
-  // keeps failing even right after a successful-looking refresh doesn't loop
-  // forever -- reset on a real connect, same spirit as the fix that stopped
-  // the original reconnect-loop bug.
+  // Counts refresh-triggered reconnect attempts that didn't end in a genuine
+  // REFRESH_EXPIRED verdict -- a pure safety net against a persistent loop
+  // that isn't actually about the token (see MAX_TOKEN_RETRY_ATTEMPTS).
+  // Reset on a real connect.
   const refreshAttemptsRef = useRef(0)
 
   const dispatchEvent = useCallback((event) => {
@@ -87,28 +93,37 @@ export function DuelSocketProvider({ duelId, children }) {
         // The server rejects a bad/expired token by CLOSING the socket with an
         // ERROR frame. Most of the time this is just the access token expiring
         // mid-session, not a truly dead login -- try one silent refresh before
-        // giving up. On success, don't deactivate: the client's own
-        // reconnectDelay retries automatically and beforeConnect() re-reads
-        // localStorage, picking up the freshly-stored token. Only fall through
-        // to a hard logout if the refresh itself fails, or if refreshing keeps
-        // not actually fixing the reconnect (capped so this can't loop forever).
+        // giving up.
         const reason = frame?.headers?.message || ''
-        if (/token|authoriz/i.test(reason)) {
-          if (refreshAttemptsRef.current >= 2) {
+        if (!/token|authoriz/i.test(reason)) {
+          console.error('STOMP error', frame)
+          return
+        }
+        refreshAccessToken().then((result) => {
+          if (result === REFRESH_EXPIRED) {
+            // The server explicitly rejected the refresh token -- no amount of
+            // retrying fixes this, only a fresh login does.
             client.deactivate()
             dispatchEvent({ type: 'AUTH_EXPIRED' })
             return
           }
+          // Anything else (refreshed fine, or the refresh call itself couldn't
+          // reach the server) means the credential is NOT confirmed dead. This
+          // used to force a logout on any failure here, which is what actually
+          // kicked people out mid-duel: a brief network hiccup during a
+          // refresh attempt got treated the same as a truly expired login,
+          // well before the access token's real ~60min lifetime was up. Don't
+          // deactivate -- the client's own reconnectDelay retries
+          // automatically, and beforeConnect() re-reads localStorage each
+          // time, so a credential that recovers (or was fine all along) gets
+          // picked up on the very next attempt. Only give up if this keeps
+          // happening well past what a transient blip should take.
           refreshAttemptsRef.current += 1
-          refreshAccessToken().then((refreshed) => {
-            if (!refreshed) {
-              client.deactivate()
-              dispatchEvent({ type: 'AUTH_EXPIRED' })
-            }
-          })
-          return
-        }
-        console.error('STOMP error', frame)
+          if (refreshAttemptsRef.current > MAX_TOKEN_RETRY_ATTEMPTS) {
+            client.deactivate()
+            dispatchEvent({ type: 'AUTH_EXPIRED' })
+          }
+        })
       },
     })
 
