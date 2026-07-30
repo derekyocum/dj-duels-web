@@ -4,6 +4,7 @@ import AppBackground from '../components/AppBackground'
 import PlayerSlot from '../components/PlayerSlot'
 import LobbyStatus from '../components/LobbyStatus'
 import LobbySettings from '../components/LobbySettings'
+import HowItWorksModal from '../components/HowItWorksModal'
 import AppNav from '../components/AppNav'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -34,12 +35,10 @@ function Lobby() {
   // defaults so the very first render matches what the server would say.
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [lobbyFull, setLobbyFull] = useState(false)
-  // First-timers get a quick how-it-works tip; dismissing it is remembered.
-  const [showHowTo, setShowHowTo] = useState(() => localStorage.getItem('dj_duels_hide_howto') !== '1')
-  const dismissHowTo = () => {
-    localStorage.setItem('dj_duels_hide_howto', '1')
-    setShowHowTo(false)
-  }
+  // How it works lives behind a button now (it used to be an always-on card
+  // eating space above the roster), so there's no dismissal to remember.
+  const [showHowTo, setShowHowTo] = useState(false)
+  const [leaving, setLeaving] = useState(false)
 
   // The server is the source of truth for who's host (it falls back to "first
   // joiner" when nobody's ?host=true link claims it — see GameSession.addPlayer).
@@ -54,6 +53,12 @@ function Lobby() {
         setPlayers(event.payload.players)
         // Carries the host's rules so someone joining a lobby that was already
         // configured doesn't sit on stale defaults until the next edit.
+        if (event.payload.settings) setSettings(event.payload.settings)
+        break
+      case 'PLAYER_LEFT':
+        // Same shape as PLAYER_JOINED, and it also carries the host handoff when
+        // the person who left was the host (isHost rides on each PlayerInfo).
+        setPlayers(event.payload.players)
         if (event.payload.settings) setSettings(event.payload.settings)
         break
       case 'SETTINGS_UPDATED':
@@ -151,6 +156,19 @@ function Lobby() {
     })
   }, [send, duelId, players])
 
+  // Leaving is two steps: tell the server to drop us from the roster (so the
+  // others see us go, and the host role is handed on if we were host), then
+  // navigate away. Navigating off /lobby unmounts DuelLayout, which unmounts
+  // DuelSocketProvider and deactivates the STOMP client -- that's what actually
+  // kills the connection. The one tick of delay gives the leave frame a moment
+  // to reach the wire before the socket goes down under it.
+  const handleLeave = useCallback(() => {
+    if (leaving) return
+    setLeaving(true)
+    send('lobby/leave', { duelId })
+    setTimeout(() => navigate('/'), 120)
+  }, [leaving, send, duelId, navigate])
+
   // Joined players, plus ONE placeholder for "someone else could still join".
   // Rendering all MAX_PLAYERS slots would imply the room needs 7 to start.
   const slots = players.length < MAX_PLAYERS ? [...players, null] : players
@@ -240,23 +258,23 @@ function Lobby() {
           </div>
         </div>
 
-        {showHowTo && (
-          <div className="relative mb-6 w-full max-w-md bg-card/50 border border-neon-blue/15 rounded-2xl px-5 py-4">
-            <button
-              onClick={dismissHowTo}
-              className="absolute top-2.5 right-3 text-text-muted/60 hover:text-text-muted text-sm cursor-pointer"
-              aria-label="Dismiss"
-            >
-              ✕
-            </button>
-            <p className="text-text-secondary text-[11px] uppercase tracking-widest font-semibold mb-2">How it works</p>
-            <ol className="text-text-muted text-xs space-y-1.5 list-decimal list-inside">
-              <li>Share the code, then start when your crew&apos;s in.</li>
-              <li>Each match, two DJs pick a track — the whole room votes 🔥 or 🗑️ on both.</li>
-              <li>Winners advance round by round until one takes the crown 👑.</li>
-            </ol>
-          </div>
-        )}
+        {/* Two low-emphasis actions, side by side so neither competes with the
+            Start button below. */}
+        <div className="mb-6 flex items-center gap-2">
+          <button
+            onClick={() => setShowHowTo(true)}
+            className="px-4 py-1.5 text-xs font-semibold rounded-full border border-neon-blue/25 text-neon-blue/90 hover:bg-neon-blue/10 hover:text-neon-blue transition-colors cursor-pointer"
+          >
+            How it works
+          </button>
+          <button
+            onClick={handleLeave}
+            disabled={leaving}
+            className="px-4 py-1.5 text-xs font-semibold rounded-full border border-text-muted/25 text-text-muted hover:text-neon-pink hover:border-neon-pink/40 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {leaving ? 'Leaving…' : 'Leave lobby'}
+          </button>
+        </div>
 
         <div className="mb-10 w-full max-w-md">
           <LobbyStatus currentCount={players.length} isHost={isHost} onStartDuel={handleStartDuel} />
@@ -302,6 +320,8 @@ function Lobby() {
         onSettingsChange={handleSettingsChange}
         readOnly={!isHost}
       />
+
+      <HowItWorksModal isOpen={showHowTo} onClose={() => setShowHowTo(false)} />
     </div>
   )
 }
