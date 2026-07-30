@@ -13,6 +13,15 @@
   --color-neon-purple: #8b2fe8;
   --color-neon-green: #39ff14;
   --color-neon-yellow: #fff01f;
+  /* 6th and 7th player colors -- a full lobby is 7, and the palette used to
+     cycle after 5, so the last two players shared a color with someone. */
+  --color-neon-orange: #ff7a1f;
+  --color-neon-cyan: #00e5ff;
+
+  /* Sudden death: the stage goes near-black and blood-red for a tiebreak
+     replay, deliberately off the normal neon palette. */
+  --color-blood: #ff1f3d;
+  --color-blood-dark: #8f0d1e;
 
   --color-text-primary: #f4f2f9;
   --color-text-secondary: #9b95a8;

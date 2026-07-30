@@ -1,23 +1,28 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router'
 import { generateDuelId } from '../utils/duelUtils'
+import { MAX_PLAYERS } from '../utils/lobbyRules'
 
-const PLAYER_OPTIONS = [2, 3, 4, 5, 6, 7]
-
+// One step now: a lobby has no capacity to choose up front. It's open from 2 up
+// to MAX_PLAYERS, so the old "How many players?" screen was asking the host to
+// commit to a number that no longer means anything -- and locking out a 5th
+// friend who showed up late.
 function CreateDuelModal({ isOpen, onClose }) {
   const navigate = useNavigate()
-  const [step, setStep] = useState(1)
-  const [playerCount, setPlayerCount] = useState(null)
   const [duelId, setDuelId] = useState(null)
   const [copied, setCopied] = useState(false)
 
-  const lobbyLink = duelId && playerCount ? `${window.location.origin}/lobby/${duelId}?players=${playerCount}` : ''
-
-  if (!isOpen && (step !== 1 || playerCount || duelId || copied)) {
-    setStep(1)
-    setPlayerCount(null)
-    setDuelId(null)
-    setCopied(false)
+  // A fresh code per opening, so reopening the modal never shares a stale link.
+  // Adjusted during render rather than in an effect (React's "derive state from
+  // props" pattern) -- an effect here would be a cascading extra render, and the
+  // lint rule rightly flags it.
+  const [wasOpen, setWasOpen] = useState(isOpen)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) {
+      setDuelId(generateDuelId())
+      setCopied(false)
+    }
   }
 
   useEffect(() => {
@@ -29,11 +34,7 @@ function CreateDuelModal({ isOpen, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  const handleNext = useCallback(() => {
-    if (!playerCount) return
-    setDuelId(generateDuelId())
-    setStep(2)
-  }, [playerCount])
+  const lobbyLink = duelId ? `${window.location.origin}/lobby/${duelId}` : ''
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(lobbyLink)
@@ -43,10 +44,10 @@ function CreateDuelModal({ isOpen, onClose }) {
 
   const handleGoToLobby = useCallback(() => {
     onClose()
-    navigate(`/lobby/${duelId}?host=true&players=${playerCount}`)
-  }, [navigate, duelId, playerCount, onClose])
+    navigate(`/lobby/${duelId}?host=true`)
+  }, [navigate, duelId, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen || !duelId) return null
 
   return (
     <div
@@ -67,55 +68,27 @@ function CreateDuelModal({ isOpen, onClose }) {
           ✕
         </button>
 
-        {step === 1 ? (
-          <>
-            <h2 className="text-xl font-bold text-text-primary mb-6">How many players?</h2>
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {PLAYER_OPTIONS.map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setPlayerCount(n)}
-                  className={`py-3 rounded-xl font-semibold text-lg transition-all duration-200 cursor-pointer ${
-                    playerCount === n
-                      ? 'bg-neon-blue/20 text-neon-blue border-2 border-neon-blue/50 shadow-[0_0_15px_rgba(0,128,255,0.2)]'
-                      : 'bg-card hover:bg-card-hover text-text-secondary border-2 border-transparent'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={handleNext}
-              disabled={!playerCount}
-              className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </>
-        ) : (
-          <>
-            <h2 className="text-xl font-bold text-text-primary mb-2">Invite your friends</h2>
-            <p className="text-text-secondary text-sm mb-5">Share this link to invite {playerCount - 1} {playerCount === 2 ? 'friend' : 'friends'}</p>
-            <div className="flex items-center gap-2 mb-6">
-              <div className="flex-1 bg-midnight/80 border border-text-muted/20 rounded-lg px-4 py-2.5 text-text-muted text-sm font-mono truncate">
-                {lobbyLink}
-              </div>
-              <button
-                onClick={handleCopy}
-                className="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-lg bg-neon-blue/15 text-neon-blue hover:bg-neon-blue/25 border border-neon-blue/30 transition-colors cursor-pointer"
-              >
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-            <button
-              onClick={handleGoToLobby}
-              className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)]"
-            >
-              Go to Lobby
-            </button>
-          </>
-        )}
+        <h2 className="text-xl font-bold text-text-primary mb-2">Invite your friends</h2>
+        <p className="text-text-secondary text-sm mb-5">
+          Share this link — anyone who joins is in, up to {MAX_PLAYERS} players.
+        </p>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="flex-1 bg-midnight/80 border border-text-muted/20 rounded-lg px-4 py-2.5 text-text-muted text-sm font-mono truncate">
+            {lobbyLink}
+          </div>
+          <button
+            onClick={handleCopy}
+            className="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-lg bg-neon-blue/15 text-neon-blue hover:bg-neon-blue/25 border border-neon-blue/30 transition-colors cursor-pointer"
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+        <button
+          onClick={handleGoToLobby}
+          className="w-full py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white transition-all duration-300 cursor-pointer hover:shadow-[0_0_30px_rgba(0,128,255,0.3)]"
+        >
+          Go to Lobby
+        </button>
       </div>
     </div>
   )

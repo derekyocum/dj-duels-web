@@ -1,14 +1,22 @@
-function CountdownTimer({ timeLeft, totalTime }) {
+function CountdownTimer({ timeLeft, totalTime, suddenDeath = false }) {
   const percentage = (timeLeft / totalTime) * 100
   const minutes = Math.floor(timeLeft / 60)
   const seconds = timeLeft % 60
   const display = `${minutes}:${seconds.toString().padStart(2, '0')}`
 
-  let colorClass = 'text-neon-blue'
-  let barColor = 'from-neon-blue to-neon-purple'
-  let glowColor = 'shadow-[0_0_20px_rgba(0,128,255,0.3)]'
+  // Sudden death runs blood-red from the start -- it's the biggest element on
+  // the screen, and leaving it neon-blue undercut the whole treatment.
+  let colorClass = suddenDeath ? 'text-blood' : 'text-neon-blue'
+  let barColor = suddenDeath ? 'from-blood-dark to-blood' : 'from-neon-blue to-neon-purple'
+  let glowColor = suddenDeath
+    ? 'shadow-[0_0_24px_rgba(255,31,61,0.45)]'
+    : 'shadow-[0_0_20px_rgba(0,128,255,0.3)]'
 
-  if (timeLeft <= 15) {
+  // The low-time warning still escalates, but red-on-red reads as no change --
+  // sudden death only shifts its glow rather than its hue.
+  if (suddenDeath) {
+    if (timeLeft <= 15) glowColor = 'shadow-[0_0_34px_rgba(255,31,61,0.75)]'
+  } else if (timeLeft <= 15) {
     colorClass = 'text-neon-pink'
     barColor = 'from-neon-pink to-neon-pink'
     glowColor = 'shadow-[0_0_20px_rgba(255,45,149,0.4)]'

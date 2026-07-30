@@ -35,11 +35,9 @@ function Matchmaking() {
         if (result.status === 'matched') {
           matchedRef.current = true
           clearInterval(pollId)
-          // players=4: the server already knows the real group size (a
-          // matchmade session's maxPlayers is set the moment it's formed), but
-          // passing it here too avoids a one-frame "1 of 2" flash before the
-          // server's PLAYER_JOINED broadcast corrects it.
-          navigate(`/lobby/${result.duelId}?players=${GROUP_SIZE}`, { replace: true })
+          // No capacity in the URL: lobbies are open now, and a matchmade
+          // session auto-starts as soon as all four queued players have joined.
+          navigate(`/lobby/${result.duelId}`, { replace: true })
         } else if (result.status === 'not_queued') {
           clearInterval(pollId)
           setTimedOut(true)

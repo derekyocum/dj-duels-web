@@ -184,9 +184,9 @@ function Champion() {
         navigate('/')
         return
       }
-      // Carry maxPlayers through so Lobby's initial render (before its own
-      // lobby/join round-trip lands) doesn't briefly default to 2 slots.
-      navigate(`/lobby/${duelId}?players=${event.payload.maxPlayers}`)
+      // No capacity to carry -- the rematch lobby is open like any other, and
+      // the host's rules come down with the next PLAYER_JOINED.
+      navigate(`/lobby/${duelId}`)
     }
   }, [navigate, duelId, user?.username])
 

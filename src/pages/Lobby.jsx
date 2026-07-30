@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import PlayerSlot from '../components/PlayerSlot'
@@ -9,21 +9,17 @@ import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 import { PLAYER_COLORS } from '../utils/duelUtils'
+import { DEFAULT_SETTINGS, MAX_PLAYERS, describeSettings } from '../utils/lobbyRules'
 
-const DEFAULT_SETTINGS = {
-  title: '',
-  timeLimit: 90,
-  songLengthLimit: null,
-  genre: 'Any genre',
-  tiebreaker: 'none',
-}
+// How long to sit on a host's rapid setting changes before telling the server.
+// Typing a theme letter by letter shouldn't be one broadcast per keystroke to
+// every player in the room.
+const SETTINGS_DEBOUNCE_MS = 400
 
 function Lobby() {
   const { duelId } = useParams()
   const [searchParams] = useSearchParams()
   const urlClaimsHost = searchParams.get('host') === 'true'
-  const urlMaxPlayers = parseInt(searchParams.get('players') || '2', 10)
-  const [maxPlayers, setMaxPlayers] = useState(urlMaxPlayers)
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -34,7 +30,10 @@ function Lobby() {
   }])
   const [copied, setCopied] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  // Server-owned: the host edits, everyone receives. Seeded with the shared
+  // defaults so the very first render matches what the server would say.
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
+  const [lobbyFull, setLobbyFull] = useState(false)
   // First-timers get a quick how-it-works tip; dismissing it is remembered.
   const [showHowTo, setShowHowTo] = useState(() => localStorage.getItem('dj_duels_hide_howto') !== '1')
   const dismissHowTo = () => {
@@ -53,7 +52,15 @@ function Lobby() {
     switch (event.type) {
       case 'PLAYER_JOINED':
         setPlayers(event.payload.players)
-        if (event.payload.maxPlayers) setMaxPlayers(event.payload.maxPlayers)
+        // Carries the host's rules so someone joining a lobby that was already
+        // configured doesn't sit on stale defaults until the next edit.
+        if (event.payload.settings) setSettings(event.payload.settings)
+        break
+      case 'SETTINGS_UPDATED':
+        setSettings(event.payload.settings)
+        break
+      case 'LOBBY_FULL':
+        setLobbyFull(true)
         break
       case 'GAME_STARTED': {
         const p = event.payload
@@ -89,11 +96,29 @@ function Lobby() {
   // IS the claim; the server decides who actually becomes host.
   useEffect(() => {
     if (isConnected) {
-      send('lobby/join', { duelId, username: user?.username, isHost: urlClaimsHost, maxPlayers: urlMaxPlayers })
+      send('lobby/join', { duelId, username: user?.username, isHost: urlClaimsHost })
     }
-  }, [isConnected, send, duelId, user?.username, urlClaimsHost, urlMaxPlayers])
+  }, [isConnected, send, duelId, user?.username, urlClaimsHost])
 
-  const lobbyLink = `${window.location.origin}/lobby/${duelId}?players=${maxPlayers}`
+  // Push the host's edits to the server, which validates them and fans them out
+  // to everyone (including back to us). Debounced, and host-only: a non-host's
+  // client has no editing UI, and the server would reject it anyway.
+  const pendingSettings = useRef(null)
+  const handleSettingsChange = useCallback((next) => {
+    setSettings(next)          // optimistic, so the host's own UI feels instant
+    pendingSettings.current = next
+  }, [])
+
+  useEffect(() => {
+    if (!isHost || !isConnected || !pendingSettings.current) return
+    const t = setTimeout(() => {
+      send('lobby/settings', { duelId, settings: pendingSettings.current })
+      pendingSettings.current = null
+    }, SETTINGS_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [settings, isHost, isConnected, send, duelId])
+
+  const lobbyLink = `${window.location.origin}/lobby/${duelId}`
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(lobbyLink)
@@ -111,20 +136,49 @@ function Lobby() {
   }, [duelId])
 
   const handleStartDuel = useCallback(() => {
+    // Settings deliberately not sent: the server owns them now and ignores any
+    // copy in this payload. Same for player1/player2 — it seeds the bracket.
     send('lobby/start', {
       duelId,
       player1: players[0],
       player2: players[1],
       allPlayers: players,
       bracket: {},
-      settings,
+      settings: {},
       trackHistory: {},
       roundLabel: 'Round 1',
       isFinal: false,
     })
-  }, [send, duelId, players, settings])
+  }, [send, duelId, players])
 
-  const slots = Array.from({ length: maxPlayers }, (_, i) => players[i] || null)
+  // Joined players, plus ONE placeholder for "someone else could still join".
+  // Rendering all MAX_PLAYERS slots would imply the room needs 7 to start.
+  const slots = players.length < MAX_PLAYERS ? [...players, null] : players
+  const ruleRows = describeSettings(settings)
+
+  if (lobbyFull) {
+    return (
+      <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
+        <AppBackground />
+        <AppNav />
+        <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
+          <span className="text-4xl">🚪</span>
+          <h1 className="text-2xl font-bold text-text-primary">This lobby is full</h1>
+          <p className="text-text-secondary text-sm max-w-sm">
+            A duel holds up to {MAX_PLAYERS} players and this one already has {MAX_PLAYERS}.
+            Ask the host to start a new one.
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-2 px-8 py-3 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white cursor-pointer"
+          >
+            Back to Home
+          </button>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
@@ -151,32 +205,40 @@ function Lobby() {
             >
               {codeCopied ? '✓' : '📋'}
             </button>
-            {isHost && (
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2.5 rounded-lg bg-card hover:bg-card-hover border border-text-muted/20 text-text-secondary hover:text-neon-blue transition-colors cursor-pointer"
-                title="Lobby settings"
-              >
-                ⚙️
-              </button>
-            )}
+            {/* Everyone gets this button now -- the host to edit the rules, and
+                everyone else to read them. */}
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2.5 rounded-lg bg-card hover:bg-card-hover border border-text-muted/20 text-text-secondary hover:text-neon-blue transition-colors cursor-pointer"
+              title={isHost ? 'Lobby settings' : "View the host's rules"}
+            >
+              ⚙️
+            </button>
           </div>
         </div>
 
-        {settings.title && (
-          <div className="mb-6 flex items-center gap-2 px-5 py-3 bg-neon-purple/10 border border-neon-purple/25 rounded-2xl max-w-md w-full">
-            <span className="text-lg">🎵</span>
-            <div className="flex flex-col min-w-0">
-              <span className="text-text-muted text-[10px] uppercase tracking-widest font-medium">Tonight&apos;s Theme</span>
-              <span className="text-text-primary font-semibold text-sm truncate">{settings.title}</span>
-            </div>
-            {settings.genre && settings.genre !== 'Any genre' && (
-              <span className="ml-auto shrink-0 text-xs text-neon-purple border border-neon-purple/30 bg-neon-purple/10 px-2.5 py-1 rounded-full">
-                {settings.genre}
-              </span>
-            )}
+        {/* House rules, visible to the whole room rather than just the host */}
+        <div className="mb-6 w-full max-w-md bg-card/50 border border-neon-purple/20 rounded-2xl px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-text-muted text-[10px] uppercase tracking-widest font-semibold">
+              {isHost ? 'Your rules' : "Host's rules"}
+            </span>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="text-neon-blue/80 hover:text-neon-blue text-[11px] font-semibold cursor-pointer"
+            >
+              {isHost ? 'Edit' : 'View all'}
+            </button>
           </div>
-        )}
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {ruleRows.map((row) => (
+              <span key={row.label} className="text-xs">
+                <span className="text-text-muted">{row.label}: </span>
+                <span className="text-text-primary font-medium">{row.value}</span>
+              </span>
+            ))}
+          </div>
+        </div>
 
         {showHowTo && (
           <div className="relative mb-6 w-full max-w-md bg-card/50 border border-neon-blue/15 rounded-2xl px-5 py-4">
@@ -197,7 +259,7 @@ function Lobby() {
         )}
 
         <div className="mb-10 w-full max-w-md">
-          <LobbyStatus currentCount={players.length} maxCount={maxPlayers} isHost={isHost} onStartDuel={handleStartDuel} />
+          <LobbyStatus currentCount={players.length} isHost={isHost} onStartDuel={handleStartDuel} />
         </div>
 
         <div className="flex flex-wrap justify-center gap-4 w-full max-w-2xl mb-10">
@@ -237,7 +299,8 @@ function Lobby() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         settings={settings}
-        onSettingsChange={setSettings}
+        onSettingsChange={handleSettingsChange}
+        readOnly={!isHost}
       />
     </div>
   )

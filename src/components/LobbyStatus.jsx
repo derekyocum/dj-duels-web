@@ -1,15 +1,21 @@
-function LobbyStatus({ currentCount, maxCount, isHost, onStartDuel }) {
-  const isFull = currentCount === maxCount
-  // A tournament needs at least two players; the host can start as soon as that's
-  // met (they don't have to wait for every slot to fill). 3+ players => a bracket.
-  const canStart = currentCount >= 2
-  const percentage = (currentCount / maxCount) * 100
+import { MAX_PLAYERS, MIN_PLAYERS } from '../utils/lobbyRules'
+
+// A lobby is open (2..MAX_PLAYERS) rather than sized up front, so there's no
+// "N of M" to fill -- the progress bar tracks how close the room is to full only
+// as a soft indicator, and the real gate is simply "are there 2 of us yet".
+function LobbyStatus({ currentCount, isHost, onStartDuel }) {
+  const isFull = currentCount >= MAX_PLAYERS
+  const canStart = currentCount >= MIN_PLAYERS
+  const percentage = Math.min(100, (currentCount / MAX_PLAYERS) * 100)
 
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="flex items-center justify-between mb-2">
         <span className={`text-sm font-semibold ${isFull ? 'text-neon-green' : 'text-text-secondary'}`}>
-          {isFull ? 'All players are here!' : `${currentCount} of ${maxCount} players joined`}
+          {currentCount} {currentCount === 1 ? 'player' : 'players'} in the lobby
+        </span>
+        <span className="text-text-muted text-xs">
+          {isFull ? 'Room full' : `room for ${MAX_PLAYERS - currentCount} more`}
         </span>
       </div>
       <div className="h-2 bg-card rounded-full overflow-hidden">

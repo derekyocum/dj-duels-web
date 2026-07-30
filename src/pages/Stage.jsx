@@ -4,6 +4,7 @@ import MusicNotes from '../components/MusicNotes'
 import AppNav from '../components/AppNav'
 import Reconnecting from '../components/Reconnecting'
 import Footer from '../components/Footer'
+import { SuddenDeathBadge, SUDDEN_DEATH_BG } from '../components/SuddenDeathBanner'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
@@ -126,7 +127,10 @@ const COLOR_GLOW = {
   'neon-yellow': 'shadow-[0_0_40px_rgba(255,240,31,0.25)]',
 }
 
-const TRACK_SECONDS = 90
+// Fallback only. The real per-song length is the host's Song Play Time rule
+// (settings.songLengthLimit); the server already builds songEndsAt from it, so
+// this is what's used when there's no rule set and as the progress-bar scale.
+const DEFAULT_TRACK_SECONDS = 90
 
 function formatTime(s) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -168,11 +172,19 @@ function Stage() {
     roundLabel,
   } = location.state ?? {}
   const round = parseInt(roundNum, 10)
+  // 1+ when this match is a tiebreak replay; drives the darker treatment.
+  const suddenDeathRound = location.state?.suddenDeathRound ?? 0
+  const isSuddenDeath = suddenDeathRound > 0
+  const isFinalSuddenDeath = location.state?.isFinalSuddenDeath ?? false
+  // The host's Song Play Time rule. The authoritative countdown still comes from
+  // the server's songEndsAt; this scales the progress bar and covers the
+  // no-server-timestamp fallback.
+  const trackSeconds = location.state?.settings?.songLengthLimit ?? DEFAULT_TRACK_SECONDS
 
   const [phase, setPhase] = useState('intro')
   const [currentTrackIndex, setCurrentTrackIndex] = useState(() => location.state?.currentSongIndex ?? 0)
   const [vote, setVote] = useState(null)
-  const [trackTimeLeft, setTrackTimeLeft] = useState(TRACK_SECONDS)
+  const [trackTimeLeft, setTrackTimeLeft] = useState(trackSeconds)
   const [songStopped, setSongStopped] = useState(false)
   const [skipRequested, setSkipRequested] = useState(false)
   // songIndex -> { up, down, voterCount, totalPlayers, voters[] }
@@ -184,6 +196,9 @@ function Stage() {
   // When a match ends but the tournament continues: { winnerName, nextLabel } for
   // the "X advances!" interstitial shown before routing to the next faceoff.
   const [advanceInfo, setAdvanceInfo] = useState(null)
+  // Set instead of advanceInfo when the match TIED: nobody advanced, so the
+  // interstitial announces a tiebreak rather than a winner.
+  const [tiebreakInfo, setTiebreakInfo] = useState(null)
 
   const tracks = [
     { track: track1, player: player1, key: 'player1' },
@@ -233,11 +248,46 @@ function Stage() {
         setSongEndsAt(event.payload.nextSongEndsAt ?? null)
         setCurrentTrackIndex(1)
         setVote(null)
-        setTrackTimeLeft(TRACK_SECONDS)
+        setTrackTimeLeft(trackSeconds)
         setSongStopped(false)
         setSkipRequested(false)
         setPhase('intro')
         setTimeout(() => setPhase('playing'), 1500)
+        break
+      }
+      case 'SUDDEN_DEATH': {
+        // The match tied, so nobody advanced -- the same two battlers go back to
+        // song selection for another swing. round+1 only keeps the URL unique so
+        // Faceoff remounts fresh; the real label still comes from the server.
+        const p = event.payload
+        setPhase('finished')
+        setTiebreakInfo({
+          round: p.suddenDeathRound,
+          isFinal: p.isFinalSuddenDeath,
+          tiedFire: p.tiedPlayer1Votes?.up,
+        })
+        setTimeout(() => {
+          // Same stale-transition guard as NEXT_MATCH: a WS reconnect mid-
+          // interstitial can resync us off Stage before this timer fires.
+          if (!window.location.pathname.includes('/stage')) return
+          navigate(`/duel/${duelId}/round/${round + 1}`, {
+            state: {
+              player1: p.player1,
+              player2: p.player2,
+              bracket: p.bracket,
+              roundLabel: p.roundLabel,
+              settings: p.settings,
+              allPlayers: p.allPlayers,
+              trackHistory,
+              faceoffEndsAt: p.faceoffEndsAt,
+              suddenDeathRound: p.suddenDeathRound,
+              isFinalSuddenDeath: p.isFinalSuddenDeath,
+              // The 🔥 count both tracks landed on, so the next screen can say
+              // exactly why this is happening.
+              tiedFire: p.tiedPlayer1Votes?.up,
+            },
+          })
+        }, 2600)
         break
       }
       case 'NEXT_MATCH': {
@@ -313,7 +363,7 @@ function Stage() {
       default:
         break
     }
-  }, [player1, player2, track1, track2, trackHistory, duelId, allPlayers, navigate, round])
+  }, [player1, player2, track1, track2, trackHistory, duelId, allPlayers, navigate, round, trackSeconds])
 
   const { send } = useDuelSocket()
   useDuelEvents(handleGameEvent)
@@ -385,31 +435,59 @@ function Stage() {
     : null
 
   return (
-    <div className="relative min-h-svh flex flex-col overflow-x-hidden bg-gradient-to-b from-[#050510] via-[#060614] to-[#050510]">
-      <MusicNotes />
+    <div className={`relative min-h-svh flex flex-col overflow-x-hidden ${
+      isSuddenDeath ? SUDDEN_DEATH_BG : 'bg-gradient-to-b from-[#050510] via-[#060614] to-[#050510]'
+    }`}>
+      {/* Drifting notes are the normal celebratory backdrop; a tiebreak strips
+          them out so the stage reads as tense rather than fun. */}
+      {!isSuddenDeath && <MusicNotes />}
 
       {/* Gradient-based glow, not blur-filtered -- blur() cost scales heavily on
           mobile GPUs and this element size/radius combo was a real jank source. */}
       <div
         className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${phase === 'playing' ? 'opacity-100' : 'opacity-30'}`}
         style={{
-          background:
-            'radial-gradient(55% 40% at 50% -6%, rgba(0,128,255,0.14), transparent 60%),' +
-            'radial-gradient(40% 32% at 6% 100%, rgba(139,47,232,0.10), transparent 62%),' +
-            'radial-gradient(40% 32% at 96% 104%, rgba(0,128,255,0.10), transparent 62%)',
+          background: isSuddenDeath
+            // Same technique, red instead of blue/purple, and pulled tighter so
+            // the edges of the screen stay black.
+            ? 'radial-gradient(50% 35% at 50% -4%, rgba(255,31,61,0.20), transparent 62%),' +
+              'radial-gradient(38% 28% at 4% 100%, rgba(143,13,30,0.18), transparent 64%),' +
+              'radial-gradient(38% 28% at 98% 104%, rgba(143,13,30,0.18), transparent 64%)'
+            : 'radial-gradient(55% 40% at 50% -6%, rgba(0,128,255,0.14), transparent 60%),' +
+              'radial-gradient(40% 32% at 6% 100%, rgba(139,47,232,0.10), transparent 62%),' +
+              'radial-gradient(40% 32% at 96% 104%, rgba(0,128,255,0.10), transparent 62%)',
         }}
       />
 
       <div className={`absolute inset-0 bg-black/40 pointer-events-none transition-opacity duration-1000 ${phase === 'playing' ? 'opacity-100' : 'opacity-0'}`} />
 
       <AppNav right={
-        <span className="px-3 py-1.5 text-xs font-semibold rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20">
-          {roundLabel || `Round ${round}`}
-        </span>
+        isSuddenDeath ? (
+          <SuddenDeathBadge round={suddenDeathRound} isFinal={isFinalSuddenDeath} />
+        ) : (
+          <span className="px-3 py-1.5 text-xs font-semibold rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20">
+            {roundLabel || `Round ${round}`}
+          </span>
+        )
       } />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-4">
-        {phase === 'finished' && advanceInfo ? (
+        {phase === 'finished' && tiebreakInfo ? (
+          <div className="flex flex-col items-center gap-4 text-center">
+            <span className="text-5xl">⚔️</span>
+            <h2 className="text-2xl md:text-3xl font-black text-blood tracking-tight">
+              Dead even.
+            </h2>
+            <p className="text-text-secondary max-w-sm">
+              {typeof tiebreakInfo.tiedFire === 'number'
+                ? `Both tracks pulled ${tiebreakInfo.tiedFire} 🔥. `
+                : 'The room couldn’t split them. '}
+              {tiebreakInfo.isFinal
+                ? 'Last chance — new tracks, one more vote.'
+                : 'Sudden death: new tracks, new vote.'}
+            </p>
+          </div>
+        ) : phase === 'finished' && advanceInfo ? (
           <div className="flex flex-col items-center gap-4 text-center">
             <span className="text-5xl animate-bounce">🏆</span>
             <h2 className="text-2xl md:text-3xl font-bold text-neon-green">{advanceInfo.winnerName} advances!</h2>
@@ -483,7 +561,10 @@ function Stage() {
                   <p className="text-text-secondary text-lg">{current?.track?.artist}</p>
                   <div className="flex items-center justify-center gap-3 mt-2">
                     {isYouTube ? (
-                      <p className="text-text-muted text-sm">5:00 limit</p>
+                      // Was a hardcoded "5:00 limit" (the embed's own end=300),
+                      // but the round now actually advances at the host's Song
+                      // Play Time -- so that's the number that matters here.
+                      <p className="text-text-muted text-sm">{formatTime(trackSeconds)} limit</p>
                     ) : (
                       <>
                         <p className="text-text-muted text-sm">{current?.track?.album}</p>
@@ -506,11 +587,15 @@ function Stage() {
                 <div className="flex items-center gap-3 w-full">
                   <div className="flex-1 h-1.5 bg-card rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-1000 ${timerIsLow ? 'bg-neon-pink' : 'bg-neon-blue'}`}
-                      style={{ width: `${(trackTimeLeft / TRACK_SECONDS) * 100}%` }}
+                      className={`h-full rounded-full transition-all duration-1000 ${
+                        isSuddenDeath ? 'bg-blood' : timerIsLow ? 'bg-neon-pink' : 'bg-neon-blue'
+                      }`}
+                      style={{ width: `${(trackTimeLeft / trackSeconds) * 100}%` }}
                     />
                   </div>
-                  <span className={`text-xs font-mono font-bold tabular-nums w-9 text-right ${timerIsLow ? 'text-neon-pink' : 'text-text-muted'}`}>
+                  <span className={`text-xs font-mono font-bold tabular-nums w-9 text-right ${
+                    isSuddenDeath ? 'text-blood' : timerIsLow ? 'text-neon-pink' : 'text-text-muted'
+                  }`}>
                     {formatTime(trackTimeLeft)}
                   </span>
                 </div>

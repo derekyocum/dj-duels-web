@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import SongSelection from '../components/SongSelection'
@@ -7,6 +7,7 @@ import AppNav from '../components/AppNav'
 import BracketPanel from '../components/BracketPanel'
 import Reconnecting from '../components/Reconnecting'
 import Footer from '../components/Footer'
+import SuddenDeathBanner, { SUDDEN_DEATH_BG } from '../components/SuddenDeathBanner'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
@@ -33,7 +34,10 @@ function Faceoff() {
 
   const battler1 = location.state?.player1
   const battler2 = location.state?.player2
-  const settings = location.state?.settings || {}
+  // Memoised because it's a dep of the event handler now (it's forwarded to
+  // Stage on BOTH_LOCKED_IN) -- a fresh {} literal each render would rebuild
+  // that callback, and with it the socket subscription, on every render.
+  const settings = useMemo(() => location.state?.settings || {}, [location.state?.settings])
   const totalTime = settings.timeLimit || 90
   const round = parseInt(roundNum, 10)
   const bracket = location.state?.bracket
@@ -48,6 +52,12 @@ function Faceoff() {
 
   const faceoffEndsAt = location.state?.faceoffEndsAt
 
+  // 0 for a normal match; 1+ when Stage sent us back here to break a tie.
+  const suddenDeathRound = location.state?.suddenDeathRound ?? 0
+  const isSuddenDeath = suddenDeathRound > 0
+  const isFinalSuddenDeath = location.state?.isFinalSuddenDeath ?? false
+  const tiedFire = location.state?.tiedFire
+
   // Non-battlers are the voting crowd for this match -- they watch the picks,
   // they don't make one, so they default to (and stay on) the spectator view.
   const [viewMode, setViewMode] = useState(isBattler ? 'battler' : 'spectator')
@@ -55,6 +65,9 @@ function Faceoff() {
     faceoffEndsAt ? Math.max(0, Math.round((faceoffEndsAt - Date.now()) / 1000)) : totalTime
   )
   const [waitingForOpponent, setWaitingForOpponent] = useState(false)
+  // Set when the server refuses a lock-in (a sudden-death repeat of a track this
+  // battler already played), so they know to pick again rather than sit waiting.
+  const [lockInError, setLockInError] = useState(null)
 
   // Recalculate from server timestamp every second so all clients stay in lockstep
   useEffect(() => {
@@ -79,12 +92,24 @@ function Faceoff() {
           roundLabel: p.roundLabel,
           bracket: p.bracket,
           songEndsAt: p.song0EndsAt,
+          // Stage needs the rules too: its progress bar and fallback timer are
+          // sized from Song Play Time, not a fixed 90s.
+          settings,
+          // Carried so the stage keeps the tiebreak treatment instead of
+          // snapping back to the normal neon look mid-sudden-death.
+          suddenDeathRound: p.suddenDeathRound ?? 0,
+          isFinalSuddenDeath,
         },
       })
+    } else if (event.type === 'TRACK_REJECTED') {
+      // Only reachable in sudden death: this battler picked a song they already
+      // played, which would just reproduce the tie the room is trying to break.
+      setWaitingForOpponent(false)
+      setLockInError(event.payload?.message ?? 'Pick a different track.')
     } else if (event.type === 'SESSION_EXPIRED' || event.type === 'SESSION_CLOSED') {
       navigate('/')
     }
-  }, [navigate, duelId, roundNum, priorTrackHistory])
+  }, [navigate, duelId, roundNum, priorTrackHistory, isFinalSuddenDeath, settings])
 
   const { send } = useDuelSocket()
   useDuelEvents(handleGameEvent)
@@ -99,14 +124,19 @@ function Faceoff() {
 
   const handleLockIn = useCallback((trackInfo) => {
     setWaitingForOpponent(true)
+    setLockInError(null)
     send('round/lock-in', { duelId, username: user?.username, track: trackInfo })
   }, [send, duelId, user?.username])
 
   if (!battler1 || !battler2) return <Reconnecting />
 
   return (
-    <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
-      <AppBackground />
+    <div className={`relative min-h-svh flex flex-col ${
+      isSuddenDeath ? SUDDEN_DEATH_BG : 'bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight'
+    }`}>
+      {/* The drifting note field is part of the normal look; sudden death drops
+          it so the screen reads as stripped-back rather than festive. */}
+      {!isSuddenDeath && <AppBackground />}
 
       <AppNav right={
         isBattler ? (
@@ -123,10 +153,29 @@ function Faceoff() {
         )
       } />
 
+      {isSuddenDeath && (
+        <SuddenDeathBanner
+          round={suddenDeathRound}
+          isFinal={isFinalSuddenDeath}
+          tiedFire={tiedFire}
+          subtitle={isBattler
+            ? 'Pick a different track — you can’t replay the one that tied.'
+            : 'Both DJs pick again. You vote again.'}
+        />
+      )}
+
+      {lockInError && (
+        <div className="relative z-10 mx-auto mb-3 max-w-md px-5 py-3 rounded-xl bg-blood/10 border border-blood/40 text-center">
+          <p className="text-blood text-sm font-semibold">{lockInError}</p>
+        </div>
+      )}
+
       {/* Where-am-I anchor: the round + bracket, plus a one-line nudge on what to do. */}
       {(roundLabel || bracket) && (
         <div className="relative z-10 flex flex-col items-center gap-3 px-6 pt-1 pb-3">
-          {roundLabel && (
+          {/* Hidden in sudden death: the banner above plus SongSelection's own
+              round pill already name the round twice, and a third is just noise. */}
+          {roundLabel && !isSuddenDeath && (
             <span className="px-3 py-1 text-xs font-semibold rounded-full bg-neon-purple/10 text-neon-purple border border-neon-purple/25">
               {roundLabel}
             </span>
@@ -136,7 +185,9 @@ function Faceoff() {
               <BracketPanel bracket={bracket} you={user?.username} />
             </div>
           )}
-          <p className="text-text-muted text-xs text-center max-w-md">
+          {/* Suppressed in sudden death -- the banner above already says what to
+              do, and more specifically. */}
+          <p className={`text-text-muted text-xs text-center max-w-md ${isSuddenDeath ? 'hidden' : ''}`}>
             {isBattler
               ? 'Pick your best track and lock it in — the whole room votes on it.'
               : status === 'eliminated'
@@ -188,6 +239,8 @@ function Faceoff() {
             roundNum={round}
             roundLabel={roundLabel}
             onLockIn={handleLockIn}
+            suddenDeath={isSuddenDeath}
+            genre={settings.genre}
           />
         ) : (
           <SpectatorView

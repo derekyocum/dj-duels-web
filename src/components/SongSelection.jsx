@@ -54,7 +54,7 @@ function SearchResultRow({ track, selected, onSelect }) {
   )
 }
 
-function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabel, onLockIn }) {
+function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabel, onLockIn, suddenDeath = false, genre }) {
   const [mode, setMode] = useState('search') // 'search' | 'paste'
   const [trackInfo, setTrackInfo] = useState(null)
   const [error, setError] = useState(null)
@@ -153,17 +153,30 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
 
   return (
     <div className="flex-1 flex flex-col items-center px-6 py-8 max-w-lg mx-auto w-full">
-      <span className="inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20 mb-4">
+      <span className={`inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full mb-4 ${
+        suddenDeath
+          ? 'bg-blood/10 text-blood border border-blood/30'
+          : 'bg-neon-blue/10 text-neon-blue border border-neon-blue/20'
+      }`}>
         {roundLabel || `Round ${roundNum}`}
       </span>
 
       <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-2">Pick your track</h2>
-      <p className="text-text-secondary text-sm mb-6">
+      <p className="text-text-secondary text-sm mb-3">
         You're up against <span className="text-text-primary font-semibold">{opponent.name}</span>
       </p>
 
+      {/* The genre rule can't be enforced in code (Spotify only exposes genre on
+          the artist, YouTube not at all), so it's surfaced here -- at the moment
+          of choosing -- and left to the room to police with its votes. */}
+      {genre && genre !== 'Any genre' && (
+        <p className="mb-6 px-3 py-1.5 text-xs rounded-full bg-neon-purple/10 text-neon-purple border border-neon-purple/25">
+          Tonight's genre: <span className="font-semibold">{genre}</span>
+        </p>
+      )}
+
       <div className="mb-8">
-        <CountdownTimer timeLeft={timeLeft} totalTime={totalTime} />
+        <CountdownTimer timeLeft={timeLeft} totalTime={totalTime} suddenDeath={suddenDeath} />
       </div>
 
       {/* Search vs paste-link mode toggle */}

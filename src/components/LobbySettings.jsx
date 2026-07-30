@@ -1,47 +1,18 @@
 import { useEffect } from 'react'
+import {
+  TIME_LIMIT_OPTIONS,
+  SONG_LENGTH_OPTIONS,
+  TIEBREAKER_OPTIONS,
+  GENRE_OPTIONS,
+  describeSettings,
+} from '../utils/lobbyRules'
 
-const SONG_LENGTH_OPTIONS = [
-  { label: 'No limit', value: null },
-  { label: '30 seconds', value: 30 },
-  { label: '1 minute', value: 60 },
-  { label: '2 minutes', value: 120 },
-  { label: '3 minutes', value: 180 },
-]
-
-const TIEBREAKER_OPTIONS = [
-  { label: 'None', value: 'none' },
-  { label: 'Sudden death round', value: 'sudden-death' },
-  { label: 'Host decides', value: 'host-decides' },
-  { label: 'Random pick', value: 'random' },
-]
-
-const TIME_LIMIT_OPTIONS = [
-  { label: '60 seconds', value: 60 },
-  { label: '90 seconds', value: 90 },
-  { label: '2 minutes', value: 120 },
-  { label: '3 minutes', value: 180 },
-  { label: '5 minutes', value: 300 },
-]
-
-const GENRE_OPTIONS = [
-  'Any genre',
-  'Hip-Hop / Rap',
-  'Pop',
-  'R&B / Soul',
-  'Rock',
-  'Electronic / EDM',
-  'Country',
-  'Latin',
-  'Jazz',
-  'Classical',
-  'Indie / Alternative',
-]
-
-function SettingSection({ label, children }) {
+function SettingSection({ label, hint, children }) {
   return (
     <div>
       <label className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-2 block">{label}</label>
       {children}
+      {hint && <p className="text-text-muted/70 text-[11px] mt-1.5">{hint}</p>}
     </div>
   )
 }
@@ -72,7 +43,25 @@ function OptionGrid({ options, value, onChange }) {
   )
 }
 
-function LobbySettings({ isOpen, onClose, settings, onSettingsChange }) {
+/**
+ * What everyone who isn't the host sees. Same rules, no controls -- the point of
+ * moving settings onto the server was so the rest of the room can actually read
+ * them before the duel starts, rather than finding out mid-match.
+ */
+function ReadOnlyRules({ settings }) {
+  return (
+    <div className="divide-y divide-text-muted/10 rounded-xl border border-text-muted/15 overflow-hidden">
+      {describeSettings(settings).map((row) => (
+        <div key={row.label} className="flex items-center justify-between gap-4 px-4 py-3">
+          <span className="text-text-muted text-sm">{row.label}</span>
+          <span className="text-text-primary text-sm font-medium text-right">{row.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function LobbySettings({ isOpen, onClose, settings, onSettingsChange, readOnly = false }) {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e) => {
@@ -109,57 +98,81 @@ function LobbySettings({ isOpen, onClose, settings, onSettingsChange }) {
 
         <div className="flex items-center gap-2 mb-6">
           <span className="text-lg">⚙️</span>
-          <h2 className="text-lg font-bold text-text-primary">Lobby Settings</h2>
+          <h2 className="text-lg font-bold text-text-primary">
+            {readOnly ? "Host's Rules" : 'Lobby Settings'}
+          </h2>
         </div>
 
-        <div className="space-y-5">
-          <SettingSection label="Duel Theme">
-            <input
-              type="text"
-              value={settings.title || ''}
-              onChange={(e) => update('title', e.target.value)}
-              placeholder="e.g. Best 90s Banger, Saturday Night Vibes..."
-              maxLength={48}
-              className="w-full bg-midnight/80 border border-text-muted/20 text-text-primary rounded-xl px-4 py-2.5 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
-            />
-          </SettingSection>
+        {readOnly ? (
+          <>
+            <ReadOnlyRules settings={settings} />
+            <div className="mt-6 pt-4 border-t border-text-muted/15">
+              <p className="text-text-muted text-xs text-center">
+                Only the host can change these. Updates appear here live.
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-5">
+              <SettingSection label="Duel Theme">
+                <input
+                  type="text"
+                  value={settings.title || ''}
+                  onChange={(e) => update('title', e.target.value)}
+                  placeholder="e.g. Best 90s Banger, Saturday Night Vibes..."
+                  maxLength={48}
+                  className="w-full bg-midnight/80 border border-text-muted/20 text-text-primary rounded-xl px-4 py-2.5 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
+                />
+              </SettingSection>
 
-          <SettingSection label="Song Selection Time">
-            <OptionGrid
-              options={TIME_LIMIT_OPTIONS}
-              value={settings.timeLimit}
-              onChange={(v) => update('timeLimit', v)}
-            />
-          </SettingSection>
+              <SettingSection label="Song Selection Time" hint="How long each DJ has to pick a track.">
+                <OptionGrid
+                  options={TIME_LIMIT_OPTIONS}
+                  value={settings.timeLimit}
+                  onChange={(v) => update('timeLimit', v)}
+                />
+              </SettingSection>
 
-          <SettingSection label="Song Length Limit">
-            <OptionGrid
-              options={SONG_LENGTH_OPTIONS}
-              value={settings.songLengthLimit}
-              onChange={(v) => update('songLengthLimit', v)}
-            />
-          </SettingSection>
+              <SettingSection label="Song Play Time" hint="How long each track plays on stage before the room's votes close.">
+                <OptionGrid
+                  options={SONG_LENGTH_OPTIONS}
+                  value={settings.songLengthLimit ?? null}
+                  onChange={(v) => update('songLengthLimit', v)}
+                />
+              </SettingSection>
 
-          <SettingSection label="Genre">
-            <OptionGrid
-              options={GENRE_OPTIONS}
-              value={settings.genre}
-              onChange={(v) => update('genre', v)}
-            />
-          </SettingSection>
+              <SettingSection label="Genre" hint="Shown to everyone as the house rule — it's on the room to keep each other honest.">
+                <OptionGrid
+                  options={GENRE_OPTIONS}
+                  value={settings.genre}
+                  onChange={(v) => update('genre', v)}
+                />
+              </SettingSection>
 
-          <SettingSection label="Tiebreaker">
-            <OptionGrid
-              options={TIEBREAKER_OPTIONS}
-              value={settings.tiebreaker}
-              onChange={(v) => update('tiebreaker', v)}
-            />
-          </SettingSection>
-        </div>
+              <SettingSection
+                label="Tiebreaker"
+                hint={
+                  settings.tiebreaker === 'fewest-dislikes'
+                    ? 'A tie goes to whichever track took fewer 🗑️.'
+                    : 'A tie sends both DJs back for a fresh pick and another vote.'
+                }
+              >
+                <OptionGrid
+                  options={TIEBREAKER_OPTIONS}
+                  value={settings.tiebreaker}
+                  onChange={(v) => update('tiebreaker', v)}
+                />
+              </SettingSection>
+            </div>
 
-        <div className="mt-6 pt-4 border-t border-text-muted/15">
-          <p className="text-text-muted text-xs text-center">All settings are optional and can be changed before starting the duel</p>
-        </div>
+            <div className="mt-6 pt-4 border-t border-text-muted/15">
+              <p className="text-text-muted text-xs text-center">
+                Everyone in the lobby sees these. Changes lock once the duel starts.
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
