@@ -5,6 +5,7 @@ import AppNav from '../components/AppNav'
 import Reconnecting from '../components/Reconnecting'
 import Footer from '../components/Footer'
 import { SuddenDeathBadge, SUDDEN_DEATH_BG } from '../components/SuddenDeathBanner'
+import { FinalsBadge, FinalsGlow } from '../components/FinalsBadge'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
@@ -176,6 +177,7 @@ function Stage() {
   const suddenDeathRound = location.state?.suddenDeathRound ?? 0
   const isSuddenDeath = suddenDeathRound > 0
   const isFinalSuddenDeath = location.state?.isFinalSuddenDeath ?? false
+  const isFinals = roundLabel === 'Final' && !isSuddenDeath
   // The host's Song Play Time rule. The authoritative countdown still comes from
   // the server's songEndsAt; this scales the progress bar and covers the
   // no-server-timestamp fallback.
@@ -441,6 +443,7 @@ function Stage() {
       {/* Drifting notes are the normal celebratory backdrop; a tiebreak strips
           them out so the stage reads as tense rather than fun. */}
       {!isSuddenDeath && <MusicNotes />}
+      {isFinals && <FinalsGlow />}
 
       {/* Gradient-based glow, not blur-filtered -- blur() cost scales heavily on
           mobile GPUs and this element size/radius combo was a real jank source. */}
@@ -464,6 +467,8 @@ function Stage() {
       <AppNav right={
         isSuddenDeath ? (
           <SuddenDeathBadge round={suddenDeathRound} isFinal={isFinalSuddenDeath} />
+        ) : isFinals ? (
+          <FinalsBadge />
         ) : (
           <span className="px-3 py-1.5 text-xs font-semibold rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20">
             {roundLabel || `Round ${round}`}
@@ -588,13 +593,13 @@ function Stage() {
                   <div className="flex-1 h-1.5 bg-card rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-1000 ${
-                        isSuddenDeath ? 'bg-blood' : timerIsLow ? 'bg-neon-pink' : 'bg-neon-blue'
+                        isSuddenDeath ? 'bg-blood' : isFinals ? 'bg-neon-yellow' : timerIsLow ? 'bg-neon-pink' : 'bg-neon-blue'
                       }`}
                       style={{ width: `${(trackTimeLeft / trackSeconds) * 100}%` }}
                     />
                   </div>
                   <span className={`text-xs font-mono font-bold tabular-nums w-9 text-right ${
-                    isSuddenDeath ? 'text-blood' : timerIsLow ? 'text-neon-pink' : 'text-text-muted'
+                    isSuddenDeath ? 'text-blood' : isFinals ? 'text-neon-yellow' : timerIsLow ? 'text-neon-pink' : 'text-text-muted'
                   }`}>
                     {formatTime(trackTimeLeft)}
                   </span>

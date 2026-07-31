@@ -23,6 +23,12 @@
   --color-blood: #ff1f3d;
   --color-blood-dark: #8f0d1e;
 
+  /* Finals: a warm gold layered ON TOP of the normal look (not a replacement,
+     unlike sudden death) -- reuses neon-yellow as the bright end so it reads
+     as "the same trophy gold already used elsewhere," plus one new deep tone
+     for gradient depth. */
+  --color-gold-dark: #b8860b;
+
   --color-text-primary: #f4f2f9;
   --color-text-secondary: #9b95a8;
   --color-text-muted: #6b6375;

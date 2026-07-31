@@ -50,10 +50,17 @@ function PlayerAvatar({ player }) {
   )
 }
 
-function SpectatorView({ player1, player2, timeLeft, totalTime = 90, roundNum, roundLabel }) {
+function SpectatorView({ player1, player2, timeLeft, totalTime = 90, roundNum, roundLabel, suddenDeath = false, finals = false }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
-      <span className="inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20 mb-8">
+      <span className={`inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full mb-8 ${
+        suddenDeath
+          ? 'bg-blood/10 text-blood border border-blood/30'
+          : finals
+            ? 'bg-neon-yellow/10 text-neon-yellow border border-neon-yellow/30'
+            : 'bg-neon-blue/10 text-neon-blue border border-neon-blue/20'
+      }`}>
+        {finals && !suddenDeath && <span className="mr-1">👑</span>}
         {roundLabel || `Round ${roundNum}`}
       </span>
 
@@ -68,7 +75,7 @@ function SpectatorView({ player1, player2, timeLeft, totalTime = 90, roundNum, r
       </div>
 
       <div className="mb-8">
-        <CountdownTimer timeLeft={timeLeft} totalTime={totalTime} />
+        <CountdownTimer timeLeft={timeLeft} totalTime={totalTime} suddenDeath={suddenDeath} finals={finals} />
       </div>
 
       <div className="flex items-center gap-2 text-text-secondary">

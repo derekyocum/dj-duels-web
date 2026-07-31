@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
 import BracketPanel from '../components/BracketPanel'
+import Confetti from '../components/Confetti'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
@@ -222,6 +223,7 @@ function Champion() {
   return (
     <div className="relative min-h-svh flex flex-col overflow-x-hidden bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
       <AppBackground />
+      <Confetti />
 
       <AppNav />
 

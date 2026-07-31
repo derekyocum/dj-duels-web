@@ -8,6 +8,7 @@ import BracketPanel from '../components/BracketPanel'
 import Reconnecting from '../components/Reconnecting'
 import Footer from '../components/Footer'
 import SuddenDeathBanner, { SUDDEN_DEATH_BG } from '../components/SuddenDeathBanner'
+import { FinalsBadge, FinalsGlow } from '../components/FinalsBadge'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 
@@ -57,6 +58,9 @@ function Faceoff() {
   const isSuddenDeath = suddenDeathRound > 0
   const isFinalSuddenDeath = location.state?.isFinalSuddenDeath ?? false
   const tiedFire = location.state?.tiedFire
+  // A tie sending the FINAL to sudden death is more urgent than it is
+  // celebratory -- the red treatment wins in that case.
+  const isFinals = roundLabel === 'Final' && !isSuddenDeath
 
   // Non-battlers are the voting crowd for this match -- they watch the picks,
   // they don't make one, so they default to (and stay on) the spectator view.
@@ -137,6 +141,7 @@ function Faceoff() {
       {/* The drifting note field is part of the normal look; sudden death drops
           it so the screen reads as stripped-back rather than festive. */}
       {!isSuddenDeath && <AppBackground />}
+      {isFinals && <FinalsGlow />}
 
       <AppNav right={
         isBattler ? (
@@ -176,9 +181,11 @@ function Faceoff() {
           {/* Hidden in sudden death: the banner above plus SongSelection's own
               round pill already name the round twice, and a third is just noise. */}
           {roundLabel && !isSuddenDeath && (
-            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-neon-purple/10 text-neon-purple border border-neon-purple/25">
-              {roundLabel}
-            </span>
+            isFinals ? <FinalsBadge /> : (
+              <span className="px-3 py-1 text-xs font-semibold rounded-full bg-neon-purple/10 text-neon-purple border border-neon-purple/25">
+                {roundLabel}
+              </span>
+            )
           )}
           {bracket && (
             <div className="w-full max-w-2xl">
@@ -240,6 +247,7 @@ function Faceoff() {
             roundLabel={roundLabel}
             onLockIn={handleLockIn}
             suddenDeath={isSuddenDeath}
+            finals={isFinals}
             genre={settings.genre}
           />
         ) : (
@@ -250,6 +258,8 @@ function Faceoff() {
             totalTime={totalTime}
             roundNum={round}
             roundLabel={roundLabel}
+            suddenDeath={isSuddenDeath}
+            finals={isFinals}
           />
         )}
       </main>

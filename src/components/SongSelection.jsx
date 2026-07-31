@@ -54,7 +54,7 @@ function SearchResultRow({ track, selected, onSelect }) {
   )
 }
 
-function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabel, onLockIn, suddenDeath = false, genre }) {
+function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabel, onLockIn, suddenDeath = false, finals = false, genre }) {
   const [mode, setMode] = useState('search') // 'search' | 'paste'
   const [trackInfo, setTrackInfo] = useState(null)
   const [error, setError] = useState(null)
@@ -156,8 +156,11 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
       <span className={`inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full mb-4 ${
         suddenDeath
           ? 'bg-blood/10 text-blood border border-blood/30'
-          : 'bg-neon-blue/10 text-neon-blue border border-neon-blue/20'
+          : finals
+            ? 'bg-neon-yellow/10 text-neon-yellow border border-neon-yellow/30'
+            : 'bg-neon-blue/10 text-neon-blue border border-neon-blue/20'
       }`}>
+        {finals && !suddenDeath && <span className="mr-1">👑</span>}
         {roundLabel || `Round ${roundNum}`}
       </span>
 
@@ -176,7 +179,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
       )}
 
       <div className="mb-8">
-        <CountdownTimer timeLeft={timeLeft} totalTime={totalTime} suddenDeath={suddenDeath} />
+        <CountdownTimer timeLeft={timeLeft} totalTime={totalTime} suddenDeath={suddenDeath} finals={finals} />
       </div>
 
       {/* Search vs paste-link mode toggle */}
