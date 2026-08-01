@@ -8,6 +8,13 @@ import { SuddenDeathBadge, SUDDEN_DEATH_BG } from '../components/SuddenDeathBann
 import { FinalsBadge, FinalsGlow } from '../components/FinalsBadge'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
+import {
+  ensureSpotifyPlaybackInitialized,
+  getSpotifyPlaybackStatus,
+  subscribeSpotifyPlaybackStatus,
+  playSpotifyTrack,
+  pauseSpotifyPlayback,
+} from '../utils/spotifyWebPlayback'
 
 // Module-level singleton: the Spotify iFrame API script should only ever be
 // injected once per page, and every mount (including the key-forced remount
@@ -208,6 +215,15 @@ function Stage() {
   ]
   const current = tracks[currentTrackIndex]
 
+  // 'connecting' | 'ready' | 'unavailable' -- the singleton starts a
+  // connectivity check on the very first Stage mount of the session and stays
+  // that way; every later mount just reads/subscribes to its current status.
+  const [spotifyPlaybackStatus, setSpotifyPlaybackStatus] = useState(getSpotifyPlaybackStatus())
+  useEffect(() => {
+    ensureSpotifyPlaybackInitialized()
+    return subscribeSpotifyPlaybackStatus(setSpotifyPlaybackStatus)
+  }, [])
+
   // If we mounted without state (reconnect / direct URL), wait for the server
   // snapshot to route + rehydrate us before giving up.
   useEffect(() => {
@@ -403,6 +419,28 @@ function Stage() {
     return () => clearTimeout(t)
   }, [trackTimeLeft, phase, vote, songStopped, send, duelId, user?.username, currentTrackIndex])
 
+  const isSpotify = current?.track?.source === 'spotify' && !!current?.track?.id
+
+  // Starts the current track once the SDK device is confirmed ready. If the
+  // singleton settles into 'ready' mid-track (a race only possible on the
+  // first Spotify track of a session, since every later track already has a
+  // settled status), this fires and the iframe-fallback JSX below unmounts in
+  // the same render -- a brief hiccup, not worth extra state to avoid.
+  useEffect(() => {
+    if (phase === 'playing' && isSpotify && spotifyPlaybackStatus === 'ready') {
+      playSpotifyTrack(current.track.id)
+    }
+  }, [phase, isSpotify, spotifyPlaybackStatus, current?.track?.id])
+
+  // Headless SDK playback doesn't stop on its own the way the iframe does on
+  // unmount -- explicitly pause whenever this track's window ends (timeout,
+  // skip) or the phase leaves 'playing', so audio doesn't run into the next
+  // track or bleed into Champion. Also pause on Stage unmount itself.
+  useEffect(() => {
+    if (songStopped || phase !== 'playing') pauseSpotifyPlayback()
+  }, [songStopped, phase])
+  useEffect(() => () => pauseSpotifyPlayback(), [])
+
   function handleVote(direction) {
     if (vote) return
     setVote(direction)
@@ -421,7 +459,6 @@ function Stage() {
   const glowClass = COLOR_GLOW[color] || COLOR_GLOW['neon-blue']
   const bgClass = COLOR_BG[color] || COLOR_BG['neon-blue']
 
-  const isSpotify = current?.track?.source === 'spotify' && !!current?.track?.id
   const isYouTube = current?.track?.source === 'youtube' && !!current?.track?.videoId
   const timerIsLow = trackTimeLeft < 10
 
@@ -554,13 +591,16 @@ function Stage() {
                     allowFullScreen
                   />
                 </div>
-              ) : phase === 'playing' && isSpotify ? (
+              ) : phase === 'playing' && isSpotify && spotifyPlaybackStatus !== 'ready' ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <SpotifyEmbed key={current.track.id} trackId={current.track.id} />
                 </div>
               ) : null}
 
-              {!isSpotify && (
+              {/* The iframe embed shows its own title/art, so this stays hidden
+                  for it -- but the SDK path is headless and has nothing else on
+                  screen, so it needs this block same as YouTube does. */}
+              {(!isSpotify || spotifyPlaybackStatus === 'ready') && (
                 <div className="text-center mb-8">
                   <h2 className={`${textClass} font-bold text-2xl md:text-3xl mb-1`}>{current?.track?.name}</h2>
                   <p className="text-text-secondary text-lg">{current?.track?.artist}</p>

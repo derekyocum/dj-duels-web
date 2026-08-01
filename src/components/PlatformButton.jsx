@@ -8,7 +8,7 @@ const PLATFORM_STYLES = {
   apple: { border: 'border-neon-blue/30', bg: 'bg-neon-blue/15', text: 'text-neon-blue', activeBg: 'bg-neon-blue/25', iconColor: '#0080ff' },
 }
 
-function PlatformButton({ name, platform, connected, accountDisplayName, comingSoon, connecting, onConnect, onDisconnect }) {
+function PlatformButton({ name, platform, connected, accountDisplayName, needsReconnect, comingSoon, connecting, onConnect, onDisconnect }) {
   const styles = PLATFORM_STYLES[platform] || PLATFORM_STYLES.spotify
   const Icon = PLATFORM_ICONS[platform]
 
@@ -23,6 +23,18 @@ function PlatformButton({ name, platform, connected, accountDisplayName, comingS
         <p className={`text-sm font-semibold ${connected ? styles.text : 'text-text-secondary'}`}>{name}</p>
         {connected && accountDisplayName && (
           <p className="text-text-muted text-xs truncate">Connected as {accountDisplayName}</p>
+        )}
+        {connected && needsReconnect && (
+          // This connection predates the "streaming" scope (Web Playback SDK) --
+          // Spotify only grants what was consented to, so getting full-track
+          // playback needs the same authorize flow run again, not a fix on our end.
+          <button
+            onClick={onConnect}
+            disabled={connecting}
+            className="text-neon-yellow text-xs font-medium hover:underline cursor-pointer disabled:opacity-50"
+          >
+            {connecting ? 'Reconnecting…' : 'Reconnect for full-track playback'}
+          </button>
         )}
         {comingSoon && <p className="text-text-muted text-xs">Coming soon</p>}
       </div>

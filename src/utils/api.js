@@ -111,6 +111,22 @@ export async function getPlatformAuthorizeUrl(platform) {
   return data.authorizeUrl
 }
 
+// { accessToken, expiresIn } on success. On a 409 (not connected / connected
+// without the "streaming" scope), throws with `.code` set to the backend's
+// error string so the caller can fall back without treating it as a hard failure.
+export async function fetchSpotifyPlaybackToken() {
+  const response = await fetch(`${API_BASE}/api/platforms/spotify/playback-token`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to fetch playback token')
+    err.code = data.error
+    throw err
+  }
+  return data
+}
+
 export async function disconnectPlatform(platform) {
   const response = await fetch(`${API_BASE}/api/platforms/${platform}`, {
     method: 'DELETE',

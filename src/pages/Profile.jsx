@@ -181,6 +181,7 @@ function Profile() {
                 platform="spotify"
                 connected={!!byPlatform.spotify?.connected}
                 accountDisplayName={byPlatform.spotify?.accountDisplayName}
+                needsReconnect={!!byPlatform.spotify?.connected && !(byPlatform.spotify?.scope || '').includes('streaming')}
                 connecting={connectingPlatform === 'spotify'}
                 onConnect={() => handleConnect('spotify')}
                 onDisconnect={() => handleDisconnect('spotify')}
