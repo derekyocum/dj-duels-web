@@ -6,6 +6,7 @@ import {
   playSpotifyTrack,
   pauseSpotifyPlayback,
 } from '../utils/spotifyWebPlayback'
+import LoungeAvatar from './LoungeAvatar'
 
 function formatTime(ms) {
   const total = Math.max(0, Math.floor(ms / 1000))
@@ -146,7 +147,10 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
         )}
 
         <div className="mt-5 flex items-center justify-between gap-3">
-          <span className="text-text-muted text-xs truncate">Added by {current.addedBy}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <LoungeAvatar username={current.addedBy} size="sm" />
+            <span className="text-text-muted text-xs truncate">{current.addedBy}&apos;s pick</span>
+          </div>
           <button
             onClick={() => { setVoted(true); onSkipVote?.() }}
             disabled={voted}

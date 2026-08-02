@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import SearchResultRow from './SearchResultRow'
+import LoungeAvatar from './LoungeAvatar'
 import { detectPlatform, PLATFORM_ICON } from '../utils/trackPlatforms'
 import { fetchSpotifyTrack, fetchYouTubeTrack, searchSpotifyTracks, searchYouTubeVideos } from '../utils/api'
 
@@ -180,8 +181,11 @@ function LoungeQueue({ queue, onAdd, onRemove }) {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-text-primary text-sm font-medium truncate">{entry.track?.name}</p>
-                  <p className="text-text-muted text-xs truncate">{entry.track?.artist} · {entry.addedBy}</p>
+                  <p className="text-text-muted text-xs truncate">{entry.track?.artist}</p>
                 </div>
+                {/* Whose pick this is, at a glance -- the avatar carries the
+                    attribution now instead of a name buried in the subtext. */}
+                <LoungeAvatar username={entry.addedBy} size="sm" className="shrink-0" />
                 {icon && <icon.Icon className="w-4 h-4 shrink-0" style={{ color: icon.color }} />}
                 <button
                   onClick={() => onRemove?.(entry.id)}

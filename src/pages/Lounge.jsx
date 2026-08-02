@@ -4,6 +4,7 @@ import AppNav from '../components/AppNav'
 import Footer from '../components/Footer'
 import LoungeQueue from '../components/LoungeQueue'
 import NowPlaying from '../components/NowPlaying'
+import LoungeAvatar from '../components/LoungeAvatar'
 import { useRoomSocket, useRoomEvents } from '../context/RoomSocketContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -132,19 +133,19 @@ function Lounge() {
             </p>
           </div>
 
-          {/* Who's here */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+          {/* Who's here — side by side, like people gathered in one room. The
+              live dot on each avatar (see LoungeAvatar) is what sells "someone
+              is actually here with you" rather than just a static list. */}
+          <div className="flex flex-wrap items-start justify-center gap-x-5 gap-y-4 mb-8">
             {members.map((m) => (
-              <span
-                key={m}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-full border ${
-                  m === state?.host
-                    ? 'bg-ember/15 text-ember border-ember/30'
-                    : 'bg-card/60 text-text-secondary border-text-muted/20'
-                }`}
-              >
-                {m}{m === state?.host ? ' · host' : ''}
-              </span>
+              <div key={m} className="relative">
+                {m === state?.host && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-sm" aria-label="Host" title="Host">
+                    👑
+                  </span>
+                )}
+                <LoungeAvatar username={m} present showName />
+              </div>
             ))}
             {members.length === 0 && (
               <span className="text-text-muted text-sm">Settling in…</span>
