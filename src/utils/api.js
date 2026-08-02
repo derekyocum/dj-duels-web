@@ -137,6 +137,47 @@ export async function disconnectPlatform(platform) {
   return data
 }
 
+// { friends: [{username, since}], incoming: [...], outgoing: [...] }
+export async function fetchFriends() {
+  const response = await fetch(`${API_BASE}/api/friends`, { headers: authHeaders() })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to load friends')
+  return data
+}
+
+export async function sendFriendRequest(username) {
+  const response = await fetch(`${API_BASE}/api/friends/requests`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username }),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to send request')
+  return data
+}
+
+export async function acceptFriendRequest(username) {
+  const response = await fetch(`${API_BASE}/api/friends/requests/${encodeURIComponent(username)}/accept`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to accept request')
+  return data
+}
+
+// Declining a request, withdrawing one you sent, and unfriending are all the
+// same server-side removal -- one function rather than three identical ones.
+export async function removeFriend(username) {
+  const response = await fetch(`${API_BASE}/api/friends/${encodeURIComponent(username)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to remove')
+  return data
+}
+
 export async function fetchMyStats() {
   const response = await fetch(`${API_BASE}/api/stats/me`, {
     headers: authHeaders(),

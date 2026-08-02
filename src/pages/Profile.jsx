@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
 import PlatformButton from '../components/PlatformButton'
+import FriendsCard from '../components/FriendsCard'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
-import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform, fetchMyStats } from '../utils/api'
+import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform, fetchMyStats, fetchFriends } from '../utils/api'
 
 const PLATFORM_NAMES = { spotify: 'Spotify', youtube: 'YouTube' }
 const DEFAULT_STATUS = [{ platform: 'spotify', connected: false }, { platform: 'youtube', connected: false }]
@@ -20,6 +21,17 @@ async function loadPlatformStatus() {
   }
 }
 
+// Same deal as loadPlatformStatus -- pure fetch, no setState. Returns null on
+// failure so the caller can keep whatever's already on screen rather than
+// blanking the list over a transient error.
+async function loadFriendsData() {
+  try {
+    return await fetchFriends()
+  } catch {
+    return null
+  }
+}
+
 function Profile() {
   const { user, deleteAccount } = useAuth()
   const navigate = useNavigate()
@@ -28,12 +40,23 @@ function Profile() {
   const [platforms, setPlatforms] = useState([])
   const [connectingPlatform, setConnectingPlatform] = useState(null)
   const [stats, setStats] = useState(null)
+  const [friends, setFriends] = useState({ friends: [], incoming: [], outgoing: [] })
+  const [friendsLoading, setFriendsLoading] = useState(true)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
 
   const justConnected = searchParams.get('connected')
   const connectError = searchParams.get('connect_error')
+
+  // Passed to FriendsCard so it refetches the whole graph after every mutation
+  // rather than patching its own copy -- an accept moves someone between two
+  // buckets, so a refetch can't drift from what the server thinks. Called from
+  // event handlers only, never an effect.
+  const refreshFriends = useCallback(async () => {
+    const data = await loadFriendsData()
+    if (data) setFriends(data)
+  }, [])
 
   useEffect(() => {
     let ignore = false
@@ -44,6 +67,11 @@ function Profile() {
     fetchMyStats()
       .then((s) => { if (!ignore) setStats(s) })
       .catch(() => {})
+    loadFriendsData().then((data) => {
+      if (ignore) return
+      if (data) setFriends(data)
+      setFriendsLoading(false)
+    })
     return () => { ignore = true }
   }, [])
 
@@ -169,6 +197,14 @@ function Profile() {
               </div>
             </div>
           </div>
+
+          <FriendsCard
+            friends={friends.friends}
+            incoming={friends.incoming}
+            outgoing={friends.outgoing}
+            loading={friendsLoading}
+            onChanged={refreshFriends}
+          />
 
           {/* Connect Your Music */}
           <div className="bg-card/60 border border-text-muted/15 rounded-2xl overflow-hidden mt-8">
