@@ -113,3 +113,64 @@ export async function playSpotifyTrack(trackId, positionMs = 0) {
 export function pauseSpotifyPlayback() {
   player?.pause().catch(() => {})
 }
+
+// How far out of step with the room a listener may drift before we correct.
+// Loose enough not to fight normal jitter or a brief buffer, tight enough that
+// nobody perceives being behind the rest of the room.
+const DRIFT_TOLERANCE_MS = 2000
+// Corrections are suppressed this close to the end of a track. The SDK's own
+// state is unreliable at track boundaries -- it emits several conflicting
+// player_state_changed events with positions that don't match the duration --
+// and the server is about to advance the room anyway, so a "correction" here
+// would just fight the natural transition.
+const TRACK_END_GUARD_MS = 5000
+
+/**
+ * Pulls this listener back onto the room's timeline. Playback is started once
+ * per track and then left alone, which means nothing otherwise notices a
+ * listener falling behind after a buffer, pausing from the Spotify app on
+ * their phone, or losing playback entirely when another device grabs it --
+ * all of which leave the room silently desynced.
+ *
+ * Meant to be called on an interval by whoever knows the room's position.
+ *
+ * @returns 'idle'      no player yet, nothing to do
+ *          'elsewhere' another device took playback off this one
+ *          'paused'    this device is paused while the room plays on
+ *          'corrected' we re-seeked (or restarted the right track)
+ *          'ok'        in step with the room
+ */
+export async function reconcileSpotifyPlayback({ trackId, expectedPositionMs, durationMs }) {
+  if (!player || status !== 'ready') return 'idle'
+
+  const state = await player.getCurrentState()
+  // getCurrentState() resolves null when this SDK device is NOT the active
+  // one -- i.e. the user hit play on their phone or another tab, which
+  // silently steals playback from here. Now that "DJ Duels" shows up as a real
+  // Spotify device, this is a genuinely reachable state.
+  if (!state) return 'elsewhere'
+
+  if (durationMs && expectedPositionMs > durationMs - TRACK_END_GUARD_MS) return 'ok'
+
+  // Wrong track entirely (skipped from the Spotify app, or a start that never
+  // landed) -- restart at the room's position rather than seeking within a
+  // track nobody else is on.
+  const playingId = state.track_window?.current_track?.id
+  if (playingId && trackId && playingId !== trackId) {
+    await playSpotifyTrack(trackId, expectedPositionMs)
+    return 'corrected'
+  }
+
+  if (state.paused) return 'paused'
+
+  if (Math.abs(state.position - expectedPositionMs) > DRIFT_TOLERANCE_MS) {
+    try {
+      await player.seek(Math.floor(Math.max(0, expectedPositionMs)))
+    } catch {
+      return 'ok' // a failed nudge isn't worth surfacing; the next tick retries
+    }
+    return 'corrected'
+  }
+
+  return 'ok'
+}

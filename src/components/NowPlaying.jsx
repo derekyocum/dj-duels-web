@@ -5,6 +5,7 @@ import {
   subscribeSpotifyPlaybackStatus,
   playSpotifyTrack,
   pauseSpotifyPlayback,
+  reconcileSpotifyPlayback,
 } from '../utils/spotifyWebPlayback'
 import LoungeAvatar from './LoungeAvatar'
 
@@ -30,6 +31,18 @@ function formatTime(ms) {
 function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesRequired, onSkipVote }) {
   const [spotifyStatus, setSpotifyStatus] = useState(getSpotifyPlaybackStatus())
   const [voted, setVoted] = useState(false)
+  // 'ok' | 'corrected' | 'paused' | 'elsewhere' | 'idle' -- see
+  // reconcileSpotifyPlayback. Only the last two are worth telling the user about.
+  const [syncState, setSyncState] = useState('ok')
+  // The YouTube embed's ?start=, frozen per track. Deriving it from the ticking
+  // clock changed the src string every second, so React kept mutating the live
+  // iframe's src and reloading the player mid-song -- that was the pause loop.
+  // Tracked with its own id (starting null) rather than folded into
+  // votedForTrack below, because this MUST also compute on the first render:
+  // votedForTrack deliberately starts equal to the current track, so a shared
+  // guard would skip the initial freeze and drop a late joiner at 0:00 instead
+  // of where the room actually is.
+  const [youtubeStart, setYoutubeStart] = useState({ id: null, sec: 0 })
   // Lazy initializer so the clock read happens inside React's init, not during
   // render (Date.now() is impure). This ticking value — not a fresh Date.now()
   // call — is what drives the progress bar.
@@ -53,6 +66,9 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
   const track = current?.track
   const source = track?.source
   const positionMs = startedAt ? Math.max(0, (now + clockOffset) - startedAt) : 0
+  // Declared up here (not after the early return below) because the sync
+  // effect depends on it, and hooks must run before any conditional return.
+  const durationMs = current?.durationMs ?? 0
 
   // Reset the "already voted" affordance when the track changes. React's
   // adjust-state-during-render pattern rather than an effect -- same approach
@@ -61,6 +77,13 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
   if (current?.id !== votedForTrack) {
     setVotedForTrack(current?.id)
     setVoted(false)
+    setSyncState('ok')
+  }
+
+  // positionMs already carries the room's offset and is pure (it reads the
+  // ticking `now` state, not the clock directly).
+  if (current?.id && youtubeStart.id !== current.id) {
+    setYoutubeStart({ id: current.id, sec: Math.floor(positionMs / 1000) })
   }
 
   // Start Spotify playback, seeking to wherever the room already is.
@@ -73,6 +96,22 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
     // tick would fight the player instead of letting it run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, spotifyStatus, track?.id, current?.id])
+
+  // Keep this listener on the room's timeline. Playback is started once per
+  // track and then left alone, so without this nothing notices a buffer
+  // leaving someone seconds behind, a pause from the Spotify phone app, or
+  // another device quietly stealing playback.
+  useEffect(() => {
+    if (source !== 'spotify' || spotifyStatus !== 'ready' || !track?.id || !startedAt) return
+    const id = setInterval(async () => {
+      setSyncState(await reconcileSpotifyPlayback({
+        trackId: track.id,
+        expectedPositionMs: (Date.now() + clockOffset) - startedAt,
+        durationMs,
+      }))
+    }, 5000)
+    return () => clearInterval(id)
+  }, [source, spotifyStatus, track?.id, startedAt, clockOffset, durationMs])
 
   // The SDK player is a persistent singleton, so it won't stop on its own when
   // the room runs dry or this page unmounts.
@@ -91,12 +130,18 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
     )
   }
 
-  const durationMs = current.durationMs ?? 0
   const progress = durationMs > 0 ? Math.min(100, (positionMs / durationMs) * 100) : 0
   const isSpotify = source === 'spotify'
   const spotifyPlayable = isSpotify && spotifyStatus === 'ready'
-  // YouTube gets a real, seeked embed for everyone -- no account needed.
-  const youtubeStart = Math.floor(positionMs / 1000)
+  // Someone whose audio has drifted off the room, or been taken over by
+  // another device -- worth telling them, since everyone else plays on.
+  const outOfSync = spotifyPlayable && (syncState === 'elsewhere' || syncState === 'paused')
+
+  // Pulls playback back to this device at the room's current position.
+  const rejoinRoom = () => {
+    playSpotifyTrack(track.id, Math.max(0, (Date.now() + clockOffset) - startedAt))
+    setSyncState('ok')
+  }
 
   return (
     <div className="rounded-3xl border border-ember/20 bg-card/50 overflow-hidden mb-6">
@@ -106,7 +151,7 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
           // instead of React mutating src in place (same reason the duel Stage
           // keys its embed -- a reused player misfires YouTube's guards).
           key={current.id}
-          src={`https://www.youtube-nocookie.com/embed/${track.videoId}?autoplay=1&playsinline=1&rel=0&start=${youtubeStart}`}
+          src={`https://www.youtube-nocookie.com/embed/${track.videoId}?autoplay=1&playsinline=1&rel=0&start=${youtubeStart.sec}`}
           title={track.name}
           className="w-full aspect-video"
           allow="autoplay; encrypted-media"
@@ -144,6 +189,22 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
             <a href="/profile" className="text-ember hover:underline">connect it on your profile</a>.
             The room keeps playing either way.
           </p>
+        )}
+
+        {outOfSync && (
+          <div className="mt-4 flex items-center gap-3 text-xs bg-ember/10 border border-ember/25 rounded-xl px-4 py-3">
+            <span className="flex-1 text-text-secondary">
+              {syncState === 'elsewhere'
+                ? 'Spotify is playing somewhere else — another device took over.'
+                : 'Your playback is paused. The room kept going.'}
+            </span>
+            <button
+              onClick={rejoinRoom}
+              className="shrink-0 px-3 py-1.5 font-semibold rounded-full bg-ember/20 text-ember border border-ember/30 hover:bg-ember/30 transition-colors cursor-pointer"
+            >
+              Play here
+            </button>
+          </div>
         )}
 
         <div className="mt-5 flex items-center justify-between gap-3">
