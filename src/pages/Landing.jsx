@@ -4,12 +4,14 @@ import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
 import CreateDuelModal from '../components/CreateDuelModal'
 import JoinDuelModal from '../components/JoinDuelModal'
+import LoungeModal from '../components/LoungeModal'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 
 function Landing() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
+  const [showLoungeModal, setShowLoungeModal] = useState(false)
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
@@ -39,6 +41,14 @@ function Landing() {
       return
     }
     navigate('/matchmaking')
+  }
+
+  const handleLoungeClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    setShowLoungeModal(true)
   }
 
   return (
@@ -101,6 +111,14 @@ function Landing() {
         </button>
         <p className="text-text-muted text-xs mt-2">No code needed — we&apos;ll pair you with 3 other players</p>
 
+        <button
+          onClick={handleLoungeClick}
+          className="mt-5 px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-ember hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+        >
+          🕯️ Listening Lounge
+        </button>
+        <p className="text-text-muted text-xs mt-2">No battle — just you and your friends putting on music</p>
+
         <div className="mt-16 flex items-center gap-8 text-text-muted text-sm">
           <div className="flex flex-col items-center gap-1">
             <span className="text-2xl font-black text-text-primary">1v1</span>
@@ -148,6 +166,7 @@ function Landing() {
 
       <CreateDuelModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
       <JoinDuelModal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)} />
+      <LoungeModal isOpen={showLoungeModal} onClose={() => setShowLoungeModal(false)} />
     </div>
   )
 }

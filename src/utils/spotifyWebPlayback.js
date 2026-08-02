@@ -92,13 +92,17 @@ export async function ensureSpotifyPlaybackInitialized() {
 // The SDK itself has no "play this URI" method -- playback is started by
 // calling Spotify's Web API directly against this device_id, same as the app
 // already talks to Spotify's own domains client-side via the iframe API.
-export async function playSpotifyTrack(trackId) {
+// positionMs lets a late joiner drop into the middle of whatever the room is
+// already playing instead of restarting the track (the Listening Lounge's whole
+// synced-listening premise). Defaults to 0 for the duel flow, which always
+// starts tracks from the top.
+export async function playSpotifyTrack(trackId, positionMs = 0) {
   if (!deviceId) return
   const token = await getPlaybackToken()
   await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uris: [`spotify:track:${trackId}`] }),
+    body: JSON.stringify({ uris: [`spotify:track:${trackId}`], position_ms: Math.floor(positionMs) }),
   })
 }
 

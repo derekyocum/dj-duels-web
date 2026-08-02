@@ -1,18 +1,8 @@
 import { useState, useRef } from 'react'
 import CountdownTimer from './CountdownTimer'
-import { SpotifyIcon, YouTubeIcon } from './PlatformIcons'
+import SearchResultRow from './SearchResultRow'
+import { detectPlatform, PLATFORM_ICON } from '../utils/trackPlatforms'
 import { fetchSpotifyTrack, fetchYouTubeTrack, searchSpotifyTracks, searchYouTubeVideos } from '../utils/api'
-
-function detectPlatform(url) {
-  if (url.includes('spotify.com/track/')) return 'spotify'
-  if (url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('music.youtube.com/watch')) return 'youtube'
-  return null
-}
-
-const PLATFORM_ICON = {
-  spotify: { Icon: SpotifyIcon, color: '#1DB954' },
-  youtube: { Icon: YouTubeIcon, color: '#FF0000' },
-}
 
 function TrackPreview({ trackInfo }) {
   const previewIcon = PLATFORM_ICON[trackInfo.source]
@@ -28,29 +18,6 @@ function TrackPreview({ trackInfo }) {
       </div>
       {previewIcon && <previewIcon.Icon className="w-5 h-5 shrink-0" style={{ color: previewIcon.color }} />}
     </div>
-  )
-}
-
-function SearchResultRow({ track, selected, onSelect }) {
-  const { Icon, color } = PLATFORM_ICON[track.source]
-  return (
-    <button
-      onClick={onSelect}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer ${
-        selected ? 'bg-neon-blue/15 border border-neon-blue/40' : 'border border-transparent hover:bg-card-hover'
-      }`}
-    >
-      {track.albumArtUrl ? (
-        <img src={track.albumArtUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" />
-      ) : (
-        <div className="w-10 h-10 rounded-md bg-card-hover shrink-0 flex items-center justify-center text-text-muted text-xs">🎵</div>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-text-primary text-sm font-medium truncate">{track.name}</p>
-        <p className="text-text-muted text-xs truncate">{track.artist}</p>
-      </div>
-      <Icon className="w-4 h-4 shrink-0" style={{ color }} />
-    </button>
   )
 }
 

@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route } from 'react-router'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import DuelLayout from './components/DuelLayout'
+import LoungeLayout from './components/LoungeLayout'
 import Landing from './pages/Landing'
+import Lounge from './pages/Lounge'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Privacy from './pages/Privacy'
@@ -31,6 +33,10 @@ function App() {
             <Route path="/duel/:duelId/round/:roundNum" element={<Faceoff />} />
             <Route path="/duel/:duelId/round/:roundNum/stage" element={<Stage />} />
             <Route path="/duel/:duelId/champion" element={<Champion />} />
+          </Route>
+          {/* Same one-socket-above-the-page arrangement as DuelLayout */}
+          <Route element={<LoungeLayout />}>
+            <Route path="/lounge/:loungeId" element={<Lounge />} />
           </Route>
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />

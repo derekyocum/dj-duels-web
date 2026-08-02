@@ -29,6 +29,13 @@
      for gradient depth. */
   --color-gold-dark: #b8860b;
 
+  /* Listening Lounge: the hangout, not the battle. A warm ember that leans on
+     the neon-orange end of the palette instead of the competitive blue/purple,
+     so the room reads as dim-and-cozy while still clearly belonging to the same
+     dark neon app. */
+  --color-ember: #ff9d5c;
+  --color-ember-deep: #4a2417;
+
   --color-text-primary: #f4f2f9;
   --color-text-secondary: #9b95a8;
   --color-text-muted: #6b6375;
