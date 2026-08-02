@@ -5,13 +5,36 @@ import AppNav from '../components/AppNav'
 import CreateDuelModal from '../components/CreateDuelModal'
 import JoinDuelModal from '../components/JoinDuelModal'
 import LoungeModal from '../components/LoungeModal'
+import ModeInfoModal from '../components/ModeInfoModal'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
+
+// A quiet "what is this?" affordance beside each mode. Drawn rather than an
+// emoji so it inherits currentColor and sits at the same visual weight as the
+// muted text around it.
+function InfoButton({ label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="shrink-0 p-1.5 rounded-full text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors cursor-pointer"
+    >
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-4 h-4" aria-hidden="true">
+        <circle cx="10" cy="10" r="8" />
+        <path d="M10 9.2v4.4" strokeLinecap="round" />
+        <circle cx="10" cy="6.3" r="0.95" fill="currentColor" stroke="none" />
+      </svg>
+    </button>
+  )
+}
 
 function Landing() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showLoungeModal, setShowLoungeModal] = useState(false)
+  // 'duel' | 'match' | 'lounge' | null -- which mode's explainer is open.
+  const [infoMode, setInfoMode] = useState(null)
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
@@ -88,36 +111,51 @@ function Landing() {
           Pick your tracks, let the crowd decide, and prove you&apos;ve got the best taste.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4">
+        {/* Two rows, no explainer text under anything -- what each mode is now
+            lives behind its info icon, so a first-time visitor sees actions
+            rather than paragraphs. */}
+        <div className="flex flex-col sm:flex-row items-center gap-3">
           <button
             onClick={handleCreateClick}
             className="group relative px-8 py-3.5 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-4px_rgba(0,128,255,0.5)] hover:shadow-[0_0_45px_-2px_rgba(0,128,255,0.7)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
             Create a Duel
           </button>
-          <button
-            onClick={handleJoinClick}
-            className="px-8 py-3.5 text-base font-bold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-          >
-            Join a Duel
-          </button>
+          {/* The info icon is paired with a button rather than being its own
+              flex child -- stacked on mobile it would otherwise land on a line
+              by itself, floating unattached to anything. */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleJoinClick}
+              className="px-8 py-3.5 text-base font-bold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            >
+              Join a Duel
+            </button>
+            <InfoButton label="How duels work" onClick={() => setInfoMode('duel')} />
+          </div>
         </div>
 
-        <button
-          onClick={handleFindMatchClick}
-          className="mt-4 px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-purple hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-        >
-          Find a Match
-        </button>
-        <p className="text-text-muted text-xs mt-2">No code needed — we&apos;ll pair you with 3 other players</p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleFindMatchClick}
+              className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-purple hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            >
+              Find a Match
+            </button>
+            <InfoButton label="About Find a Match" onClick={() => setInfoMode('match')} />
+          </div>
 
-        <button
-          onClick={handleLoungeClick}
-          className="mt-5 px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-ember hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-        >
-          🕯️ Listening Lounge
-        </button>
-        <p className="text-text-muted text-xs mt-2">No battle — just you and your friends putting on music</p>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleLoungeClick}
+              className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-ember hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            >
+              Listening Lounge
+            </button>
+            <InfoButton label="About the Listening Lounge" onClick={() => setInfoMode('lounge')} />
+          </div>
+        </div>
 
         <div className="mt-16 flex items-center gap-8 text-text-muted text-sm">
           <div className="flex flex-col items-center gap-1">
@@ -167,6 +205,7 @@ function Landing() {
       <CreateDuelModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
       <JoinDuelModal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)} />
       <LoungeModal isOpen={showLoungeModal} onClose={() => setShowLoungeModal(false)} />
+      <ModeInfoModal mode={infoMode} onClose={() => setInfoMode(null)} />
     </div>
   )
 }
