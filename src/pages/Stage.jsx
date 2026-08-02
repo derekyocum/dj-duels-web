@@ -595,6 +595,23 @@ function Stage() {
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <SpotifyEmbed key={current.track.id} trackId={current.track.id} />
                 </div>
+              ) : phase === 'playing' && isSpotify ? (
+                // SDK path: the player is headless, so unlike the iframe embed it
+                // renders NOTHING on its own -- the album art has to come from us
+                // or the screen is just text while a full track plays.
+                <div className="flex justify-center mb-6">
+                  {current?.track?.albumArtUrl ? (
+                    <img
+                      src={current.track.albumArtUrl}
+                      alt={`${current.track.name} album art`}
+                      className={`w-64 h-64 md:w-72 md:h-72 rounded-2xl object-cover ${glowClass}`}
+                    />
+                  ) : (
+                    <div className={`w-64 h-64 md:w-72 md:h-72 rounded-2xl bg-card flex items-center justify-center ${glowClass}`}>
+                      <span className="text-5xl">🎵</span>
+                    </div>
+                  )}
+                </div>
               ) : null}
 
               {/* The iframe embed shows its own title/art, so this stays hidden
