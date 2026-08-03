@@ -113,11 +113,16 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
     return () => clearInterval(id)
   }, [source, spotifyStatus, track?.id, startedAt, clockOffset, durationMs])
 
-  // The SDK player is a persistent singleton, so it won't stop on its own when
-  // the room runs dry or this page unmounts.
+  // The SDK player is a persistent singleton -- it does NOT stop on its own
+  // when the room moves off Spotify entirely. A Spotify->Spotify skip doesn't
+  // need an explicit pause here: the "start playback" effect above calls
+  // playSpotifyTrack() for the new track, and the SDK's play() call already
+  // replaces whatever was playing. But going to YouTube (or to nothing) has no
+  // such call to hand off to, so without this the old Spotify audio just kept
+  // playing underneath the new YouTube embed -- both audible at once.
   useEffect(() => {
-    if (!current) pauseSpotifyPlayback()
-  }, [current])
+    if (!current || source !== 'spotify') pauseSpotifyPlayback()
+  }, [current, source])
   useEffect(() => () => pauseSpotifyPlayback(), [])
 
   if (!current) {
