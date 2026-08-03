@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /$
+Allow: /login
+Allow: /signup
+Allow: /forgot-password
+Allow: /privacy
+Disallow: /lobby/
+Disallow: /duel/
+Disallow: /lounge/
+Disallow: /profile
+Disallow: /leaderboard
+Disallow: /matchmaking
+Disallow: /api/
