@@ -7,7 +7,7 @@ import {
   pauseSpotifyPlayback,
   reconcileSpotifyPlayback,
 } from '../utils/spotifyWebPlayback'
-import { fetchSpotifyLikedStatus, likeSpotifyTrack, unlikeSpotifyTrack } from '../utils/api'
+import { fetchSpotifyLikedStatus, likeSpotifyTrack, unlikeSpotifyTrack, getPlatformAuthorizeUrl } from '../utils/api'
 import LoungeAvatar from './LoungeAvatar'
 
 // Filled vs. outline heart -- drawn rather than an icon-library import, same
@@ -69,6 +69,10 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
   // here (not-connected / needs-reconnect) would just be noise -- the heart
   // simply doesn't render for anyone that check fails for.
   const [likeState, setLikeState] = useState({ trackId: null, liked: null, available: false })
+  // Lounges are open to everyone regardless of Spotify status -- this just
+  // tracks the in-flight "Connect Spotify" button next to the not-playable
+  // notice below, same full-navigation flow Profile's own connect uses.
+  const [connectingSpotify, setConnectingSpotify] = useState(false)
 
   useEffect(() => {
     ensureSpotifyPlaybackInitialized()
@@ -192,6 +196,20 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
     setSyncState('ok')
   }
 
+  // Same full-navigation OAuth handoff Profile.jsx's connect button uses --
+  // lands back on /profile?connected=spotify, so re-opening this lounge link
+  // afterward is what picks the room's sync back up (playback init below
+  // reruns on that next mount and reports 'ready' once actually connected).
+  const connectSpotify = async () => {
+    setConnectingSpotify(true)
+    try {
+      const url = await getPlatformAuthorizeUrl('spotify')
+      window.location.href = url
+    } catch {
+      setConnectingSpotify(false)
+    }
+  }
+
   return (
     <div className="rounded-3xl border border-ember/20 bg-card/50 overflow-hidden mb-6">
       {source === 'youtube' && track?.videoId && (
@@ -246,12 +264,19 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
         </div>
 
         {isSpotify && !spotifyPlayable && (
-          <p className="mt-4 text-xs text-text-muted bg-card/60 border border-text-muted/15 rounded-xl px-4 py-3">
-            Everyone else is hearing this on Spotify. Full tracks need your own
-            Spotify Premium account connected —{' '}
-            <a href="/profile" className="text-ember hover:underline">connect it on your profile</a>.
-            The room keeps playing either way.
-          </p>
+          <div className="mt-4 flex items-center gap-3 text-xs bg-card/60 border border-text-muted/15 rounded-xl px-4 py-3">
+            <span className="text-lg shrink-0">🎧</span>
+            <span className="flex-1 text-text-muted">
+              Connect your Spotify account to listen along in sync — the room keeps playing either way.
+            </span>
+            <button
+              onClick={connectSpotify}
+              disabled={connectingSpotify}
+              className="shrink-0 px-3 py-1.5 font-semibold rounded-full bg-ember/20 text-ember border border-ember/30 hover:bg-ember/30 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {connectingSpotify ? 'Redirecting…' : 'Connect Spotify'}
+            </button>
+          </div>
         )}
 
         {outOfSync && (
