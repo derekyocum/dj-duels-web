@@ -127,6 +127,52 @@ export async function fetchSpotifyPlaybackToken() {
   return data
 }
 
+// { liked: boolean } on success. On a 409 (not connected / connected without
+// "user-library-modify"), throws with `.code` set to the backend's error
+// string -- same shape as fetchSpotifyPlaybackToken, same reason: the caller
+// needs to tell "never connected" apart from "needs to reconnect" to prompt
+// the right thing rather than a generic failure.
+export async function fetchSpotifyLikedStatus(trackId) {
+  const response = await fetch(`${API_BASE}/api/platforms/spotify/liked/${encodeURIComponent(trackId)}`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to check liked status')
+    err.code = data.error
+    throw err
+  }
+  return data
+}
+
+export async function likeSpotifyTrack(trackId) {
+  const response = await fetch(`${API_BASE}/api/platforms/spotify/liked/${encodeURIComponent(trackId)}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to save track')
+    err.code = data.error
+    throw err
+  }
+  return data
+}
+
+export async function unlikeSpotifyTrack(trackId) {
+  const response = await fetch(`${API_BASE}/api/platforms/spotify/liked/${encodeURIComponent(trackId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to remove track')
+    err.code = data.error
+    throw err
+  }
+  return data
+}
+
 export async function disconnectPlatform(platform) {
   const response = await fetch(`${API_BASE}/api/platforms/${platform}`, {
     method: 'DELETE',

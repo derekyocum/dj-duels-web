@@ -7,7 +7,18 @@ import {
   pauseSpotifyPlayback,
   reconcileSpotifyPlayback,
 } from '../utils/spotifyWebPlayback'
+import { fetchSpotifyLikedStatus, likeSpotifyTrack, unlikeSpotifyTrack } from '../utils/api'
 import LoungeAvatar from './LoungeAvatar'
+
+// Filled vs. outline heart -- drawn rather than an icon-library import, same
+// idiom the app already uses for the landing page's info glyph.
+function HeartIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+      <path d="M12 21s-7.5-4.6-10-9.3C.6 8.4 2.3 5 5.7 5c2 0 3.4 1.1 4.3 2.4C10.9 6.1 12.3 5 14.3 5c3.4 0 5.1 3.4 3.7 6.7C19.5 16.4 12 21 12 21z" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 function formatTime(ms) {
   const total = Math.max(0, Math.floor(ms / 1000))
@@ -50,6 +61,14 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
   // Which track we've already told the player to start, so a re-render or a
   // roster change doesn't restart the song under everyone.
   const startedTrackRef = useRef(null)
+  // Saving to Liked Songs is a plain REST call the server makes with the
+  // caller's own token -- unlike playback, it works identically regardless of
+  // Premium/SDK status, so this is independent of spotifyStatus above.
+  // `available` only turns true once a real liked-status check has succeeded;
+  // there's already a "connect Spotify" nudge for playback, so a second one
+  // here (not-connected / needs-reconnect) would just be noise -- the heart
+  // simply doesn't render for anyone that check fails for.
+  const [likeState, setLikeState] = useState({ trackId: null, liked: null, available: false })
 
   useEffect(() => {
     ensureSpotifyPlaybackInitialized()
@@ -112,6 +131,31 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
     }, 5000)
     return () => clearInterval(id)
   }, [source, spotifyStatus, track?.id, startedAt, clockOffset, durationMs])
+
+  // Check liked status once per Spotify track. YouTube tracks have no Spotify
+  // library concept, so this only fires for source === 'spotify'.
+  useEffect(() => {
+    if (source !== 'spotify' || !track?.id) return
+    let cancelled = false
+    fetchSpotifyLikedStatus(track.id)
+      .then((data) => { if (!cancelled) setLikeState({ trackId: track.id, liked: data.liked, available: true }) })
+      .catch(() => { if (!cancelled) setLikeState({ trackId: track.id, liked: null, available: false }) })
+    return () => { cancelled = true }
+  }, [source, track?.id])
+
+  // Optimistic toggle with a revert on failure -- saving a track is quick
+  // enough that waiting on the round trip before reflecting it would just
+  // make the heart feel laggy for no real benefit.
+  const toggleLike = async () => {
+    if (!likeState.available || likeState.liked === null || likeState.trackId !== track.id) return
+    const next = !likeState.liked
+    setLikeState((s) => ({ ...s, liked: next }))
+    try {
+      await (next ? likeSpotifyTrack(track.id) : unlikeSpotifyTrack(track.id))
+    } catch {
+      setLikeState((s) => (s.trackId === track.id ? { ...s, liked: !next } : s))
+    }
+  }
 
   // The SDK player is a persistent singleton -- it does NOT stop on its own
   // when the room moves off Spotify entirely. A Spotify->Spotify skip doesn't
@@ -176,6 +220,20 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
             <p className="text-text-primary font-semibold truncate">{track?.name}</p>
             <p className="text-text-secondary text-sm truncate">{track?.artist}</p>
           </div>
+          {isSpotify && likeState.available && likeState.trackId === track?.id && (
+            <button
+              onClick={toggleLike}
+              aria-label={likeState.liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
+              title={likeState.liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
+              className={`shrink-0 p-2 rounded-full border transition-colors cursor-pointer ${
+                likeState.liked
+                  ? 'text-ember border-ember/30 bg-ember/15 hover:bg-ember/25'
+                  : 'text-text-muted border-text-muted/25 hover:text-ember hover:border-ember/40'
+              }`}
+            >
+              <HeartIcon filled={likeState.liked} />
+            </button>
+          )}
         </div>
 
         <div className="mt-5 flex items-center gap-3">

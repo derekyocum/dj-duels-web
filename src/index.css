@@ -129,12 +129,58 @@ body {
   animation: glow-pulse 1.5s ease-in-out infinite;
 }
 
+/* Listening Lounge ambient orbs -- slow, wandering drift across the whole
+   background, edge to edge. transform-only (translate3d), same compositor-
+   cheap discipline as the rest of this file: no blur(), no layout properties,
+   so it stays cheap regardless of how many orbs are on screen. Three separate
+   keyframes rather than one reused with different delays, so the paths
+   themselves differ and the room doesn't read as one orb repeated three times.
+   Values are vw/vh so this scales to any viewport without JS measuring it. */
+@keyframes lounge-orb-drift-a {
+  0%   { transform: translate3d(-10vw, 65vh, 0); }
+  22%  { transform: translate3d(55vw, 5vh, 0); }
+  48%  { transform: translate3d(95vw, 55vh, 0); }
+  74%  { transform: translate3d(35vw, 90vh, 0); }
+  100% { transform: translate3d(-10vw, 65vh, 0); }
+}
+
+@keyframes lounge-orb-drift-b {
+  0%   { transform: translate3d(90vw, -5vh, 0); }
+  30%  { transform: translate3d(20vw, 40vh, 0); }
+  55%  { transform: translate3d(-5vw, 85vh, 0); }
+  80%  { transform: translate3d(70vw, 70vh, 0); }
+  100% { transform: translate3d(90vw, -5vh, 0); }
+}
+
+@keyframes lounge-orb-drift-c {
+  0%   { transform: translate3d(40vw, 95vh, 0); }
+  25%  { transform: translate3d(85vw, 30vh, 0); }
+  60%  { transform: translate3d(10vw, -5vh, 0); }
+  85%  { transform: translate3d(60vw, 45vh, 0); }
+  100% { transform: translate3d(40vw, 95vh, 0); }
+}
+
+@utility animate-lounge-orb-a {
+  animation: lounge-orb-drift-a 52s ease-in-out infinite;
+}
+
+@utility animate-lounge-orb-b {
+  animation: lounge-orb-drift-b 64s ease-in-out infinite;
+}
+
+@utility animate-lounge-orb-c {
+  animation: lounge-orb-drift-c 46s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-float,
   .animate-breathe,
   .animate-breathe-slow,
   .animate-glow-pulse,
-  .animate-pulse-border {
+  .animate-pulse-border,
+  .animate-lounge-orb-a,
+  .animate-lounge-orb-b,
+  .animate-lounge-orb-c {
     animation: none;
   }
 }

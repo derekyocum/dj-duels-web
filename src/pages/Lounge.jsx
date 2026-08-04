@@ -5,6 +5,8 @@ import Footer from '../components/Footer'
 import LoungeQueue from '../components/LoungeQueue'
 import NowPlaying from '../components/NowPlaying'
 import LoungeAvatar from '../components/LoungeAvatar'
+import LoungeOrbs from '../components/LoungeOrbs'
+import LoungeDeniedModal from '../components/LoungeDeniedModal'
 import { useRoomSocket, useRoomEvents } from '../context/RoomSocketContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -81,24 +83,9 @@ function Lounge() {
     return (
       <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-ember-deep via-midnight to-midnight">
         <AppNav />
-        <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <span className="text-5xl mb-4">🚪</span>
-          <h1 className="text-2xl font-bold text-text-primary mb-2">
-            {denied === 'full' ? 'This lounge is full' : 'This lounge is friends only'}
-          </h1>
-          <p className="text-text-secondary text-sm max-w-sm mb-6">
-            {denied === 'full'
-              ? 'Try again once someone heads out.'
-              : 'You need to be friends with whoever started it. Send them a friend request and ask them to accept.'}
-          </p>
-          <button
-            onClick={() => navigate('/profile')}
-            className="px-6 py-2.5 text-sm font-semibold rounded-full bg-ember/15 text-ember border border-ember/30 hover:bg-ember/25 transition-colors cursor-pointer"
-          >
-            Go to friends
-          </button>
-        </main>
+        <main className="relative z-10 flex-1" />
         <Footer />
+        <LoungeDeniedModal reason={denied} />
       </div>
     )
   }
@@ -108,14 +95,9 @@ function Lounge() {
 
   return (
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-ember-deep via-midnight to-midnight">
-      {/* Slow, warm ambient wash -- transform/opacity only, no blur filter
-          (same performance rule AppBackground's comments establish). */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[42rem] h-[42rem] rounded-full animate-breathe-slow"
-             style={{ background: 'radial-gradient(circle, rgba(255,157,92,0.13) 0%, rgba(255,157,92,0.04) 45%, transparent 70%)' }} />
-        <div className="absolute bottom-0 right-0 w-[30rem] h-[30rem] rounded-full animate-breathe"
-             style={{ background: 'radial-gradient(circle, rgba(139,47,232,0.10) 0%, transparent 65%)' }} />
-      </div>
+      {/* Slow glowing orbs wandering edge to edge -- transform-only, no blur
+          filter (same performance rule AppBackground's comments establish). */}
+      <LoungeOrbs />
 
       <AppNav right={
         <span className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full bg-ember/10 text-ember border border-ember/25">
