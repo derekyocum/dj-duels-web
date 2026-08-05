@@ -478,14 +478,6 @@ function Stage() {
     <div className={`relative min-h-svh flex flex-col overflow-x-hidden ${
       isSuddenDeath ? SUDDEN_DEATH_BG : 'bg-gradient-to-b from-[#050510] via-[#060614] to-[#050510]'
     }`}>
-      {/* Drifting orbs in this round's own accent -- the lounge's ambience,
-          recolored per bracket round (blood red for a tiebreak, gold for the
-          final). Replaces the floating music notes that used to sit here:
-          both are ambient motion, and running them together just made the
-          screen busy behind a playing video. */}
-      <DriftingOrbs colors={orbColorsForRound({ roundLabel, isSuddenDeath })} />
-      {isFinals && <FinalsGlow />}
-
       {/* Gradient-based glow, not blur-filtered -- blur() cost scales heavily on
           mobile GPUs and this element size/radius combo was a real jank source. */}
       <div
@@ -504,6 +496,19 @@ function Stage() {
       />
 
       <div className={`absolute inset-0 bg-black/40 pointer-events-none transition-opacity duration-1000 ${phase === 'playing' ? 'opacity-100' : 'opacity-0'}`} />
+
+      {/* Drifting orbs in this round's own accent -- the lounge's ambience,
+          recolored per bracket round (blood red for a tiebreak, gold for the
+          final). Replaces the floating music notes that used to sit here:
+          both are ambient motion, and running them together just made the
+          screen busy behind a playing video.
+
+          Deliberately ABOVE the black scrim: the scrim's job is to sink the
+          static backdrop so the video/art pops, but it was also taking 40%
+          off the orbs for the entire time a track plays -- which is exactly
+          when anyone is looking. Stage lights shouldn't dim with the room. */}
+      <DriftingOrbs colors={orbColorsForRound({ roundLabel, isSuddenDeath })} />
+      {isFinals && <FinalsGlow />}
 
       <AppNav right={
         isSuddenDeath ? (

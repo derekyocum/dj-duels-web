@@ -22,11 +22,26 @@ const SUDDEN_DEATH_ORBS = [
 ]
 
 // Gold on gold for the last match -- layers with FinalsGlow's warm wash into
-// "stage lights" rather than a single flat tint.
+// "stage lights" rather than a single flat tint. Runs brighter than every
+// other palette on purpose: this is the one round that should look lit up,
+// and gold against a near-black backdrop needs the extra push to read as
+// gold rather than as a grey smudge.
+//
+// The mid orb is a true mid-gold rather than the theme's gold-dark (#b8860b)
+// -- that token is a genuinely DARK hue, so on this backdrop it went muddy
+// at any alpha low enough to sit behind content. It still earns its place in
+// FinalsBadge/FinalsGlow, where it's a gradient's deep end rather than a
+// light source.
+// Alphas are ~3x the other palettes because alpha-compositing ANY color onto
+// a near-black backdrop drags it toward grey -- gold at the 0.15 these
+// started at composited to about rgb(41,31,15), i.e. mud. (Tried
+// mix-blend-mode: screen first, which is the textbook "this is a light
+// source" fix; over a near-black backdrop it's mathematically almost a
+// no-op, so raw alpha is the only real lever here.)
 const FINAL_ORBS = [
-  'rgba(255,240,31,0.15)',  // neon-yellow
-  'rgba(184,134,11,0.20)',  // gold-dark
-  'rgba(255,240,31,0.09)',
+  'rgba(255,240,31,0.46)',  // neon-yellow
+  'rgba(255,194,51,0.42)',  // mid gold
+  'rgba(255,240,31,0.28)',
 ]
 
 // Each bracket round gets its own accent, cool early and deepening as the
