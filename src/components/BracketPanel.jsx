@@ -20,12 +20,17 @@ function Slot({ name, winner, you }) {
       : decided
         ? 'text-text-muted/50 line-through'
         : 'text-text-primary'
+  const isOut = decided && !!name && !isWinner
   return (
     <div className="flex items-center justify-between gap-1.5">
       <span className={`truncate ${cls}`}>
         {name || 'TBD'}{isYou && <span className="text-neon-blue font-semibold"> (you)</span>}
       </span>
-      {isWinner && <span className="text-neon-green text-[10px] shrink-0">✓</span>}
+      {/* Advanced vs knocked out, called out explicitly -- the strikethrough
+          alone is easy to miss at this size, and on the round intro card
+          people are reading the bracket at a glance. */}
+      {isWinner && <span className="text-neon-green text-[10px] shrink-0" aria-label="advanced">✓</span>}
+      {isOut && <span className="text-neon-pink/70 text-[10px] shrink-0" aria-label="eliminated">✗</span>}
     </div>
   )
 }

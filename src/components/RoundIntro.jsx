@@ -1,3 +1,5 @@
+import BracketPanel from './BracketPanel'
+
 // Accent per bracket round. Deliberately mirrors the orb palette in
 // orbColors.js -- same server round labels, same hues -- so the title card
 // and the background it sits on agree. Keep the two in step if either moves.
@@ -20,9 +22,12 @@ const DEFAULT_ACCENT = 'text-neon-blue'
  * The server pays for this window out of its own cushion (GameController's
  * STAGE_INTRO_MS), so the card costs nobody any playback time.
  */
-function RoundIntro({ roundLabel, isSuddenDeath, suddenDeathRound, isFinalSuddenDeath, player1, player2 }) {
+function RoundIntro({ roundLabel, isSuddenDeath, suddenDeathRound, isFinalSuddenDeath, player1, player2, bracket, you }) {
   const isFinals = roundLabel === 'Final' && !isSuddenDeath
   const accent = isSuddenDeath ? 'text-blood' : (ACCENT[roundLabel] ?? DEFAULT_ACCENT)
+  // Only worth drawing once there's an actual tournament to show. A plain 1v1
+  // is a single-match "bracket", which would just repeat the vs line above it.
+  const showBracket = Array.isArray(bracket) && bracket.length > 1
 
   const title = isSuddenDeath
     ? `Sudden Death${suddenDeathRound > 1 ? ` ${suddenDeathRound}` : ''}`
@@ -70,6 +75,15 @@ function RoundIntro({ roundLabel, isSuddenDeath, suddenDeathRound, isFinalSudden
           {player2?.name}
         </span>
       </div>
+
+      {/* Where the tournament stands going into this match: everyone knocked
+          out so far is X'd, everyone still alive is checked. The server sends
+          a fresh bracket with each match, so this redraws itself each round. */}
+      {showBracket && (
+        <div className="w-full max-w-2xl mt-2 animate-intro-rise" style={{ animationDelay: '380ms' }}>
+          <BracketPanel bracket={bracket} you={you} />
+        </div>
+      )}
     </div>
   )
 }

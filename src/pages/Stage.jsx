@@ -188,7 +188,7 @@ function Stage() {
   const {
     player1, player2, track1, track2,
     allPlayers = [], trackHistory = {},
-    roundLabel,
+    roundLabel, bracket,
   } = location.state ?? {}
   const round = parseInt(roundNum, 10)
   // 1+ when this match is a tiebreak replay; drives the darker treatment.
@@ -581,6 +581,8 @@ function Stage() {
             isFinalSuddenDeath={isFinalSuddenDeath}
             player1={player1}
             player2={player2}
+            bracket={bracket}
+            you={user?.username}
           />
         ) : (
           <>
