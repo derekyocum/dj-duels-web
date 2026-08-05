@@ -4,9 +4,17 @@
 // trophy/achievement color) so this reads as "extra shine," not a new theme.
 export function FinalsBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-neon-yellow/10 text-neon-yellow border border-neon-yellow/30 shadow-[0_0_20px_-6px_rgba(255,240,31,0.5)]">
+    <span className="relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-neon-yellow/10 text-neon-yellow border border-neon-yellow/30 shadow-[0_0_20px_-6px_rgba(255,240,31,0.5)]">
       <span className="text-sm leading-none">👑</span>
       Final
+      {/* Specular glint sweeping across the gold. Sits above the label (so it
+          catches the text too) but is pointer-events-none and aria-hidden --
+          it's polish, not content. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 left-0 w-1/2 animate-badge-shimmer"
+        style={{ background: 'linear-gradient(100deg, transparent 0%, rgba(255,255,255,0.38) 50%, transparent 100%)' }}
+      />
     </span>
   )
 }

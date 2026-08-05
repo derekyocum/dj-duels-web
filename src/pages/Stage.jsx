@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import DriftingOrbs from '../components/DriftingOrbs'
+import RoundIntro from '../components/RoundIntro'
 import AppNav from '../components/AppNav'
 import Reconnecting from '../components/Reconnecting'
 import Footer from '../components/Footer'
@@ -141,6 +142,15 @@ const COLOR_GLOW = {
 // this is what's used when there's no rule set and as the progress-bar scale.
 const DEFAULT_TRACK_SECONDS = 90
 
+// How long the opening "Semifinal — Alice vs Bob" card holds before audio
+// starts. MUST stay in step with the server's STAGE_INTRO_MS (GameController):
+// songEndsAt is absolute, so anything longer than the server's cushion is
+// playback time silently taken off the track.
+const ROUND_INTRO_MS = 3000
+// The quieter beat between the two songs of the same match -- no title card,
+// so it stays short and is covered by the server's NAV_GRACE_MS.
+const SONG_SWAP_MS = 1500
+
 function formatTime(s) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
@@ -192,6 +202,9 @@ function Stage() {
   const trackSeconds = location.state?.settings?.songLengthLimit ?? DEFAULT_TRACK_SECONDS
 
   const [phase, setPhase] = useState('intro')
+  // 'round' -> the full title card, shown once when the match opens.
+  // 'song'  -> the quiet fade between the two songs of that same match.
+  const [introKind, setIntroKind] = useState('round')
   const [currentTrackIndex, setCurrentTrackIndex] = useState(() => location.state?.currentSongIndex ?? 0)
   const [vote, setVote] = useState(null)
   const [trackTimeLeft, setTrackTimeLeft] = useState(trackSeconds)
@@ -270,8 +283,11 @@ function Stage() {
         setTrackTimeLeft(trackSeconds)
         setSongStopped(false)
         setSkipRequested(false)
+        // Second song of the SAME match -- everyone already saw the round
+        // card, so this is the short quiet beat, not another title screen.
+        setIntroKind('song')
         setPhase('intro')
-        setTimeout(() => setPhase('playing'), 1500)
+        setTimeout(() => setPhase('playing'), SONG_SWAP_MS)
         break
       }
       case 'SUDDEN_DEATH': {
@@ -387,9 +403,10 @@ function Stage() {
   const { send } = useDuelSocket()
   useDuelEvents(handleGameEvent)
 
-  // Intro → playing transition
+  // Opening title card → playing. Longer than the between-songs beat because
+  // this one actually shows something (see RoundIntro).
   useEffect(() => {
-    const timer = setTimeout(() => setPhase('playing'), 1500)
+    const timer = setTimeout(() => setPhase('playing'), ROUND_INTRO_MS)
     return () => clearTimeout(timer)
   }, [])
 
@@ -556,6 +573,15 @@ function Stage() {
             <span className="text-4xl animate-pulse">⚡</span>
             <h2 className="text-2xl md:text-3xl font-bold text-text-primary">Tallying votes...</h2>
           </div>
+        ) : phase === 'intro' && introKind === 'round' ? (
+          <RoundIntro
+            roundLabel={roundLabel}
+            isSuddenDeath={isSuddenDeath}
+            suddenDeathRound={suddenDeathRound}
+            isFinalSuddenDeath={isFinalSuddenDeath}
+            player1={player1}
+            player2={player2}
+          />
         ) : (
           <>
             <div className={`flex items-center gap-3 mb-6 transition-all duration-700 ${phase === 'intro' ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
