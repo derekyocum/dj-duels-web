@@ -233,6 +233,17 @@ export async function fetchMyStats() {
   return data // { username, trophies, wins, losses, gamesPlayed }
 }
 
+export async function setMyAvatar(avatarId) {
+  const response = await fetch(`${API_BASE}/api/stats/me/avatar`, {
+    method: 'PUT',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ avatarId }),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to save avatar')
+  return data
+}
+
 export async function fetchLeaderboard(limit = 20) {
   const response = await fetch(`${API_BASE}/api/stats/leaderboard?limit=${limit}`, {
     headers: authHeaders(),
