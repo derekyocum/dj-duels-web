@@ -5,8 +5,9 @@ import Footer from '../components/Footer'
 import LoungeQueue from '../components/LoungeQueue'
 import NowPlaying from '../components/NowPlaying'
 import LoungeAvatar from '../components/LoungeAvatar'
-import LoungeOrbs from '../components/LoungeOrbs'
+import DriftingOrbs from '../components/DriftingOrbs'
 import LoungeDeniedModal from '../components/LoungeDeniedModal'
+import { LOUNGE_ORBS } from '../utils/orbColors'
 import { useRoomSocket, useRoomEvents } from '../context/RoomSocketContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -97,7 +98,7 @@ function Lounge() {
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-ember-deep via-midnight to-midnight">
       {/* Slow glowing orbs wandering edge to edge -- transform-only, no blur
           filter (same performance rule AppBackground's comments establish). */}
-      <LoungeOrbs />
+      <DriftingOrbs colors={LOUNGE_ORBS} />
 
       <AppNav right={
         <span className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full bg-ember/10 text-ember border border-ember/25">

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
-import MusicNotes from '../components/MusicNotes'
+import DriftingOrbs from '../components/DriftingOrbs'
 import AppNav from '../components/AppNav'
 import Reconnecting from '../components/Reconnecting'
 import Footer from '../components/Footer'
 import { SuddenDeathBadge, SUDDEN_DEATH_BG } from '../components/SuddenDeathBanner'
 import { FinalsBadge, FinalsGlow } from '../components/FinalsBadge'
+import { orbColorsForRound } from '../utils/orbColors'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 import {
@@ -477,9 +478,12 @@ function Stage() {
     <div className={`relative min-h-svh flex flex-col overflow-x-hidden ${
       isSuddenDeath ? SUDDEN_DEATH_BG : 'bg-gradient-to-b from-[#050510] via-[#060614] to-[#050510]'
     }`}>
-      {/* Drifting notes are the normal celebratory backdrop; a tiebreak strips
-          them out so the stage reads as tense rather than fun. */}
-      {!isSuddenDeath && <MusicNotes />}
+      {/* Drifting orbs in this round's own accent -- the lounge's ambience,
+          recolored per bracket round (blood red for a tiebreak, gold for the
+          final). Replaces the floating music notes that used to sit here:
+          both are ambient motion, and running them together just made the
+          screen busy behind a playing video. */}
+      <DriftingOrbs colors={orbColorsForRound({ roundLabel, isSuddenDeath })} />
       {isFinals && <FinalsGlow />}
 
       {/* Gradient-based glow, not blur-filtered -- blur() cost scales heavily on
