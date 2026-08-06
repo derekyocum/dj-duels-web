@@ -199,6 +199,39 @@ body {
   animation: badge-shimmer 3.6s ease-in-out infinite;
 }
 
+/* Winners wall: one continuous drift of album covers. The track holds TWO
+   copies of the list back to back and translates exactly -50%, so the loop
+   point lands on an identical frame and reads as endless. transform-only,
+   like everything else that animates in this file. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@utility animate-marquee {
+  animation: marquee 90s linear infinite;
+}
+
+/* Stop for anyone actually looking at it -- the cards are interactive (each
+   carries a 🔥 button), and chasing a moving target is miserable. focus-within
+   covers keyboard users, who never generate a hover. */
+.animate-marquee:hover,
+.animate-marquee:focus-within {
+  animation-play-state: paused;
+}
+
+/* The strip keeps overflow-x so it stays reachable by hand (the only way to
+   see the far end under prefers-reduced-motion, where the drift is off), but
+   a scrollbar under a decorative marquee just looks like a rendering bug. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-float,
   .animate-breathe,
@@ -209,6 +242,12 @@ body {
   .animate-orb-b,
   .animate-orb-c,
   .animate-badge-shimmer {
+    animation: none;
+  }
+
+  /* The wall stops drifting but stays scrollable by hand -- see its container's
+     overflow-x, which is what makes the far end reachable without the animation. */
+  .animate-marquee {
     animation: none;
   }
 

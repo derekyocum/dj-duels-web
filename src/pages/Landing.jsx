@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
@@ -6,8 +6,12 @@ import CreateDuelModal from '../components/CreateDuelModal'
 import JoinDuelModal from '../components/JoinDuelModal'
 import LoungeModal from '../components/LoungeModal'
 import ModeInfoModal from '../components/ModeInfoModal'
+import ChampionSpotlight from '../components/ChampionSpotlight'
+import WinnersWall from '../components/WinnersWall'
+import LandingFaq from '../components/LandingFaq'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
+import { fetchChampion, fetchRecentTracks } from '../utils/api'
 
 function Landing() {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -16,6 +20,19 @@ function Landing() {
   const [showModeInfo, setShowModeInfo] = useState(false)
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+
+  // Both are public reads that resolve to null/[] rather than throwing, and
+  // both sections render nothing when empty -- so a slow or failed fetch just
+  // leaves the page as it was rather than showing a broken shell.
+  const [champion, setChampion] = useState(null)
+  const [recentTracks, setRecentTracks] = useState([])
+
+  useEffect(() => {
+    let ignore = false
+    fetchChampion().then((c) => { if (!ignore) setChampion(c) })
+    fetchRecentTracks().then((t) => { if (!ignore) setRecentTracks(t) })
+    return () => { ignore = true }
+  }, [])
 
   // Signed-out users used to be able to pick a player count and see a
   // generated invite link before finally hitting the auth wall at the actual
@@ -137,23 +154,13 @@ function Landing() {
           What&apos;s the difference?
         </button>
 
-        <div className="mt-16 flex items-center gap-8 text-text-muted text-sm">
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-2xl font-black text-text-primary">1v1</span>
-            <span className="uppercase tracking-wider text-xs">Rounds</span>
-          </div>
-          <div className="w-px h-8 bg-text-muted/20" />
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-2xl font-black text-text-primary">Up to 7</span>
-            <span className="uppercase tracking-wider text-xs">Players</span>
-          </div>
-          <div className="w-px h-8 bg-text-muted/20" />
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-2xl font-black text-text-primary">Vote</span>
-            <span className="uppercase tracking-wider text-xs">To Win</span>
-          </div>
-        </div>
       </main>
+
+      {/* Real state of the game, not claims about it. Both render nothing at
+          all until there's something true to show -- which is the whole point
+          of putting them here instead of another row of stated mechanics. */}
+      <ChampionSpotlight champion={champion} />
+      <WinnersWall tracks={recentTracks} />
 
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-4xl mx-auto text-center mb-16">
@@ -179,6 +186,8 @@ function Landing() {
           ))}
         </div>
       </section>
+
+      <LandingFaq />
 
       <Footer />
 

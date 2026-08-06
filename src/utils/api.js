@@ -244,6 +244,53 @@ export async function setMyAvatar(avatarId) {
   return data
 }
 
+// ── Showcase (landing page) ──────────────────────────────────────────────────
+// The two reads are PUBLIC: the landing page renders for signed-out visitors,
+// so these deliberately send no auth header. Both resolve to null/[] rather
+// than throwing -- a marketing section must never be able to break the page it
+// sits on, and "nothing to show yet" is a normal state on a young app.
+
+/** The reigning trophy leader, or null when nobody has won anything yet
+ *  (the server answers 204 for that rather than inventing a zero state). */
+export async function fetchChampion() {
+  try {
+    const response = await fetch(`${API_BASE}/api/showcase/champion`)
+    if (response.status === 204 || !response.ok) return null
+    return await response.json()
+  } catch {
+    return null
+  }
+}
+
+/** Recently won tracks, newest first. Anonymous by design -- the server sends
+ *  no usernames, only the track and its global 🔥 count. */
+export async function fetchRecentTracks(limit = 12) {
+  try {
+    const response = await fetch(`${API_BASE}/api/showcase/recent-tracks?limit=${limit}`)
+    if (!response.ok) return []
+    const data = await response.json()
+    return Array.isArray(data) ? data : []
+  } catch {
+    return []
+  }
+}
+
+/** Adds this user's single 🔥. Requires auth. Throws with `.code === 'already_fired'`
+ *  on a repeat so the caller can just light the button rather than show an error. */
+export async function fireTrack(matchId) {
+  const response = await fetch(`${API_BASE}/api/showcase/tracks/${encodeURIComponent(matchId)}/fire`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to record')
+    err.code = data.error
+    throw err
+  }
+  return data
+}
+
 export async function fetchLeaderboard(limit = 20) {
   const response = await fetch(`${API_BASE}/api/stats/leaderboard?limit=${limit}`, {
     headers: authHeaders(),
