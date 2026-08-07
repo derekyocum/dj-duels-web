@@ -159,7 +159,10 @@ function WinnersWall({ tracks }) {
 
       {/* Only the middle of the strip is in focus; everything drifting toward
           the edges softens out, so attention lands on the few cards nearest
-          the centre.
+          the centre. This only makes sense on a strip that's actually
+          moving -- a short, static, centred row has no edges drifting out of
+          view to soften, so the panels below are skipped entirely rather
+          than fading empty background next to cards they no longer reach.
 
           The blur lives on TWO STATIC SIDE PANELS rather than on the cards.
           Blurring per-card would mean recomputing a filter for every card on
@@ -172,7 +175,7 @@ function WinnersWall({ tracks }) {
         <div
           ref={viewportRef}
           className="overflow-x-auto no-scrollbar"
-          style={{ maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' }}
+          style={shouldLoop ? { maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' } : undefined}
         >
           {/* justify-center when it fits: a short, still strip should sit in
               the middle rather than hug the left edge under the centred label. */}
@@ -190,16 +193,20 @@ function WinnersWall({ tracks }) {
 
         {/* pointer-events-none so the cards underneath stay tappable -- the
             🔥 buttons must not be swallowed by a decorative overlay. */}
-        <div
-          className="absolute inset-y-0 left-0 w-[26%] pointer-events-none backdrop-blur-[3px]"
-          aria-hidden="true"
-          style={{ maskImage: 'linear-gradient(to right, black 35%, transparent)' }}
-        />
-        <div
-          className="absolute inset-y-0 right-0 w-[26%] pointer-events-none backdrop-blur-[3px]"
-          aria-hidden="true"
-          style={{ maskImage: 'linear-gradient(to left, black 35%, transparent)' }}
-        />
+        {shouldLoop && (
+          <>
+            <div
+              className="absolute inset-y-0 left-0 w-[26%] pointer-events-none backdrop-blur-[3px]"
+              aria-hidden="true"
+              style={{ maskImage: 'linear-gradient(to right, black 35%, transparent)' }}
+            />
+            <div
+              className="absolute inset-y-0 right-0 w-[26%] pointer-events-none backdrop-blur-[3px]"
+              aria-hidden="true"
+              style={{ maskImage: 'linear-gradient(to left, black 35%, transparent)' }}
+            />
+          </>
+        )}
       </div>
     </section>
   )
