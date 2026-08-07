@@ -33,24 +33,46 @@ const FAQ = [
 
 function FaqItem({ item, isOpen, onToggle }) {
   return (
-    <div className="border-b border-text-muted/10">
+    <div className="relative">
+      {/* Hairline that fades out at both ends instead of a full-width rule --
+          a hard edge-to-edge border is what made this read as a stack of
+          boxes sitting on the page rather than text emerging from it. */}
+      <div
+        className="absolute inset-x-0 top-0 h-px pointer-events-none"
+        aria-hidden="true"
+        style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.07), transparent)' }}
+      />
+
       <button
         onClick={onToggle}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between gap-4 py-4 text-left cursor-pointer group"
+        className="relative w-full flex items-center justify-between gap-4 py-4 text-left cursor-pointer group"
       >
-        <span className="text-text-primary font-semibold group-hover:text-neon-blue transition-colors">
+        {/* Open rows are lit from the left rather than outlined or filled, so
+            the expanded state still belongs to the background. */}
+        {isOpen && (
+          <div
+            className="absolute inset-0 -inset-x-6 pointer-events-none"
+            aria-hidden="true"
+            style={{ background: 'radial-gradient(60% 100% at 0% 50%, rgba(0,128,255,0.07), transparent 70%)' }}
+          />
+        )}
+        <span className={`relative font-medium transition-colors ${
+          isOpen ? 'text-text-primary/90' : 'text-text-secondary group-hover:text-text-primary/80'
+        }`}>
           {item.q}
         </span>
         <span
-          className={`shrink-0 text-text-muted transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}
+          className={`relative shrink-0 text-sm transition-all duration-300 ${
+            isOpen ? 'rotate-45 text-neon-blue/70' : 'text-text-muted/60 group-hover:text-text-muted'
+          }`}
           aria-hidden="true"
         >
           +
         </span>
       </button>
       {isOpen && (
-        <p className="text-text-secondary text-sm leading-relaxed pb-5 pr-8">{item.a}</p>
+        <p className="relative text-text-secondary/80 text-sm leading-relaxed pb-5 pr-8">{item.a}</p>
       )}
     </div>
   )
@@ -62,9 +84,11 @@ function LandingFaq() {
   return (
     <section className="relative z-10 py-20 px-6">
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-text-primary text-center mb-10">
-          Before you <span className="text-neon-blue">start</span>
-        </h2>
+        {/* A quiet section label rather than a headline -- this is reference
+            material someone drops into, not a pitch that needs to shout. */}
+        <p className="text-text-muted/70 text-[11px] font-bold uppercase tracking-[0.24em] text-center mb-8">
+          Before you start
+        </p>
         <div>
           {FAQ.map((item, i) => (
             <FaqItem

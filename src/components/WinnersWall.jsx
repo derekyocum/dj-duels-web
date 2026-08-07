@@ -98,11 +98,15 @@ function WinnersWall({ tracks }) {
 
   return (
     <section className="relative z-10 py-16">
-      <div className="max-w-4xl mx-auto text-center px-6 mb-10">
-        <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-3">
-          Tracks that <span className="text-neon-orange">won</span>
-        </h2>
-        <p className="text-text-secondary text-lg">
+      {/* Quiet section label rather than a headline -- the album art is the
+          colour on this page, and a big bold heading above it was competing
+          with the very thing it's introducing. Matches the FAQ's label so the
+          two lower sections read as one calm register beneath the hero. */}
+      <div className="max-w-4xl mx-auto text-center px-6 mb-8">
+        <p className="text-neon-orange/60 text-[11px] font-bold uppercase tracking-[0.24em] mb-2">
+          Tracks that won
+        </p>
+        <p className="text-text-secondary/80 text-sm">
           Real picks that beat someone. Hit 🔥 on the ones you&apos;d have voted for.
         </p>
       </div>

@@ -162,31 +162,6 @@ function Landing() {
       <ChampionSpotlight champion={champion} />
       <WinnersWall tracks={recentTracks} />
 
-      <section className="relative z-10 py-24 px-6">
-        <div className="max-w-4xl mx-auto text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
-            How it <span className="text-neon-blue">works</span>
-          </h2>
-          <p className="text-text-secondary text-lg">Three steps to prove you&apos;ve got the best taste</p>
-        </div>
-
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { icon: '🎯', ring: 'bg-neon-blue/15 border-neon-blue/30', title: 'Create a Duel', body: 'Pick your player count, grab the invite link, and send it to your crew.' },
-            { icon: '⚔️', ring: 'bg-neon-pink/15 border-neon-pink/30', title: 'Battle 1v1', body: 'Go head-to-head each round. Pick your best track and let it ride.' },
-            { icon: '👑', ring: 'bg-neon-purple/15 border-neon-purple/30', title: 'Claim the Crown', body: 'Friends vote on the winner each round. Last one standing takes the crown.' },
-          ].map((s) => (
-            <div key={s.title} className="glass hover:glass-hover rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1">
-              <div className={`w-14 h-14 rounded-2xl border ${s.ring} flex items-center justify-center mx-auto mb-5`}>
-                <span className="text-2xl">{s.icon}</span>
-              </div>
-              <h3 className="text-lg font-bold text-text-primary mb-2">{s.title}</h3>
-              <p className="text-text-secondary text-sm leading-relaxed">{s.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <LandingFaq />
 
       <Footer />
