@@ -59,9 +59,19 @@ export async function ensureSpotifyPlaybackInitialized() {
   initStarted = true
   try {
     await getPlaybackToken()
-  } catch {
+  } catch (err) {
     // Not connected, or connected from before the "streaming" scope existed --
     // the caller falls back to the existing 30s-preview iframe embed.
+    //
+    // Logged loudly because this used to fail completely silently: the only
+    // symptom was "Spotify has no sound", with nothing anywhere saying which
+    // of the several possible reasons it was. err.code carries the backend's
+    // machine-readable reason ('not_connected' / 'needs_reconnect'), which is
+    // the difference between "connect Spotify" and "reconnect to pick up the
+    // streaming scope".
+    console.warn('[Spotify] playback unavailable -- no usable token.',
+      'reason:', err?.code ?? err?.message ?? err,
+      '| falling back to the 30s preview embed.')
     setStatus('unavailable')
     return
   }
@@ -82,9 +92,22 @@ export async function ensureSpotifyPlaybackInitialized() {
   // up-front check above, but the SDK can still race into it. initialization_error:
   // the browser/environment can't run the SDK at all. All three mean the same
   // thing to Stage.jsx: fall back to the iframe embed for this session.
-  player.addListener('account_error', () => setStatus('unavailable'))
-  player.addListener('authentication_error', () => setStatus('unavailable'))
-  player.addListener('initialization_error', () => setStatus('unavailable'))
+  //
+  // Each logs which one actually fired: they mean very different things to a
+  // user (Premium lapsed vs. token rejected vs. browser can't run the SDK)
+  // and used to be indistinguishable from the outside.
+  player.addListener('account_error', (e) => {
+    console.warn('[Spotify] account_error -- the Web Playback SDK requires Premium.', e?.message ?? '')
+    setStatus('unavailable')
+  })
+  player.addListener('authentication_error', (e) => {
+    console.warn('[Spotify] authentication_error -- token rejected by Spotify.', e?.message ?? '')
+    setStatus('unavailable')
+  })
+  player.addListener('initialization_error', (e) => {
+    console.warn('[Spotify] initialization_error -- this browser cannot run the SDK.', e?.message ?? '')
+    setStatus('unavailable')
+  })
 
   player.connect()
 }
@@ -97,13 +120,23 @@ export async function ensureSpotifyPlaybackInitialized() {
 // synced-listening premise). Defaults to 0 for the duel flow, which always
 // starts tracks from the top.
 export async function playSpotifyTrack(trackId, positionMs = 0) {
-  if (!deviceId) return
+  if (!deviceId) {
+    console.warn('[Spotify] play requested before the SDK device was ready -- no audio for this track.')
+    return
+  }
   const token = await getPlaybackToken()
-  await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+  const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ uris: [`spotify:track:${trackId}`], position_ms: Math.floor(positionMs) }),
   })
+  // Spotify answers 204 on success. A 403 here is usually Premium-gated or a
+  // regionally unavailable track; 404 means the device went away. This call
+  // used to be fire-and-forget, so a rejected play looked exactly like a
+  // successful silent one.
+  if (!response.ok) {
+    console.warn('[Spotify] play rejected:', response.status, await response.text().catch(() => ''))
+  }
 }
 
 // The player is a headless, persistent singleton -- unlike the iframe embed it

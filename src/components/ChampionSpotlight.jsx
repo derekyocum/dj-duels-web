@@ -20,37 +20,48 @@ function ChampionSpotlight({ champion }) {
   const initial = champion.username?.charAt(0).toUpperCase() ?? '?'
 
   return (
-    <section className="relative z-10 px-6 pt-6 pb-2">
-      <div className="relative max-w-md mx-auto flex items-center gap-5 py-4">
-        {/* Edgeless bloom: the falloff IS the container. Nothing to align to,
-            so it never reads as a box that's slightly the wrong size. */}
+    <section className="relative z-10 px-6 pb-10">
+      {/* Sized to the page, not to its own contents. The previous version was
+          a narrow max-w-md block floating in a much wider layout, which is
+          what made it read as undersized and dropped in -- it now spans the
+          same width as the wall below it, so the two share an edge. */}
+      <div className="relative max-w-5xl mx-auto flex items-center justify-center gap-6 py-6">
+        {/* Bloom is deliberately far wider and shorter than the content so its
+            falloff is off-screen at every side -- a tighter gradient on a
+            narrow box left a faintly visible rectangle, which is exactly the
+            box edge this design is trying not to have. */}
+        {/* The box this paints into is deliberately LARGER than the content on
+            every side, and the gradients fade out well inside it. A gradient
+            whose falloff is still visible at the element's own edge gets
+            clipped there into a hard line -- which is precisely the faint
+            rectangle this treatment is meant to avoid. */}
         <div
-          className="absolute inset-0 -inset-x-12 pointer-events-none"
+          className="absolute -inset-y-20 -inset-x-40 pointer-events-none"
           aria-hidden="true"
           style={{
             background:
-              'radial-gradient(50% 140% at 22% 50%, rgba(255,240,31,0.10), transparent 70%),' +
-              'radial-gradient(40% 120% at 22% 50%, rgba(184,134,11,0.10), transparent 60%)',
+              'radial-gradient(34% 46% at 50% 50%, rgba(255,240,31,0.10), transparent 70%),' +
+              'radial-gradient(52% 64% at 50% 50%, rgba(184,134,11,0.07), transparent 72%)',
           }}
         />
 
-        <div className={`relative shrink-0 w-16 h-16 rounded-full flex items-center justify-center border ${
+        <div className={`relative shrink-0 w-[72px] h-[72px] rounded-full flex items-center justify-center border ${
           avatar ? `${AVATAR_BG[avatar.color]} ${AVATAR_BORDER[avatar.color]}` : 'bg-neon-yellow/10 border-neon-yellow/25'
         }`}>
           {avatar ? (
-            <span className={AVATAR_TEXT[avatar.color]}><avatar.Icon size={30} /></span>
+            <span className={AVATAR_TEXT[avatar.color]}><avatar.Icon size={34} /></span>
           ) : (
-            <span className="text-neon-yellow font-black text-2xl">{initial}</span>
+            <span className="text-neon-yellow font-black text-3xl">{initial}</span>
           )}
-          <span className="absolute -top-2 -right-1 text-base opacity-80" aria-hidden="true">👑</span>
+          <span className="absolute -top-2 -right-1 text-lg opacity-80" aria-hidden="true">👑</span>
         </div>
 
         <div className="relative min-w-0">
-          <p className="text-neon-yellow/60 text-[10px] font-bold uppercase tracking-[0.22em] mb-1">
+          <p className="text-neon-yellow/60 text-[10px] font-bold uppercase tracking-[0.22em] mb-1.5">
             Top of the board
           </p>
-          <p className="text-text-primary/90 font-bold text-lg truncate">{champion.username}</p>
-          <p className="text-text-muted text-sm">
+          <p className="text-text-primary/90 font-bold text-2xl truncate leading-tight">{champion.username}</p>
+          <p className="text-text-muted text-sm mt-0.5">
             <span className="text-neon-yellow/70 font-semibold tabular-nums">{champion.trophies}</span>
             {' '}{champion.trophies === 1 ? 'trophy' : 'trophies'}
             <span className="text-text-muted/70"> · {champion.wins}W&nbsp;{champion.losses}L</span>

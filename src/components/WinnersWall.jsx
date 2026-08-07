@@ -111,22 +111,46 @@ function WinnersWall({ tracks }) {
         </p>
       </div>
 
-      {/* overflow-hidden clips the drift; the inner track is what animates.
-          Masked at both edges so cards fade out instead of being guillotined. */}
-      <div
-        className="overflow-x-auto no-scrollbar"
-        style={{ maskImage: 'linear-gradient(to right, transparent, black 6%, black 94%, transparent)' }}
-      >
-        <div className="flex gap-5 w-max px-6 animate-marquee">
-          {[...tracks, ...tracks].map((track, i) => (
-            <TrackCard
-              key={`${track.matchId}-${i}`}
-              track={track}
-              fired={firedIds.has(track.matchId)}
-              onFire={handleFire}
-            />
-          ))}
+      {/* Only the middle of the strip is in focus; everything drifting toward
+          the edges softens out, so attention lands on the few cards nearest
+          the centre.
+
+          The blur lives on TWO STATIC SIDE PANELS rather than on the cards.
+          Blurring per-card would mean recomputing a filter for every card on
+          every frame of the marquee -- exactly the cost this codebase already
+          learned to avoid (see index.css's note on the removed blur() sites
+          and the scroll jank they caused). Two fixed panels are a constant
+          cost no matter how many tracks are on the wall, and the radius is
+          kept low for the same reason. */}
+      <div className="relative">
+        <div
+          className="overflow-x-auto no-scrollbar"
+          style={{ maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' }}
+        >
+          <div className="flex gap-5 w-max px-6 animate-marquee">
+            {[...tracks, ...tracks].map((track, i) => (
+              <TrackCard
+                key={`${track.matchId}-${i}`}
+                track={track}
+                fired={firedIds.has(track.matchId)}
+                onFire={handleFire}
+              />
+            ))}
+          </div>
         </div>
+
+        {/* pointer-events-none so the cards underneath stay tappable -- the
+            🔥 buttons must not be swallowed by a decorative overlay. */}
+        <div
+          className="absolute inset-y-0 left-0 w-[26%] pointer-events-none backdrop-blur-[3px]"
+          aria-hidden="true"
+          style={{ maskImage: 'linear-gradient(to right, black 35%, transparent)' }}
+        />
+        <div
+          className="absolute inset-y-0 right-0 w-[26%] pointer-events-none backdrop-blur-[3px]"
+          aria-hidden="true"
+          style={{ maskImage: 'linear-gradient(to left, black 35%, transparent)' }}
+        />
       </div>
     </section>
   )

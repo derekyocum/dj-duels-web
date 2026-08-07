@@ -1,5 +1,10 @@
 node_modules
 dist
 .DS_Store
+# Bare ".env" did NOT cover .env.local / .env.development.local etc, which is
+# exactly where Vite expects local overrides to go -- one of those could have
+# been committed with a real key in it.
 .env
+.env.*
+!.env.example
 .claude

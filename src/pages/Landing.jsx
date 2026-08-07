@@ -76,7 +76,12 @@ function Landing() {
 
       <AppNav />
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center py-16">
+      {/* Was flex-1 + justify-center: with real sections below, that stretched
+          the hero to fill leftover height and left a dead gap before the
+          showcase, which is what made everything under it look dropped on
+          rather than composed. The hero is now its own block and the page
+          flows from it. */}
+      <main className="relative z-10 flex flex-col items-center px-6 text-center pt-16 pb-12">
         <div className="mb-5">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full glass text-neon-pink">
             <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-glow-pulse" />
@@ -156,11 +161,24 @@ function Landing() {
 
       </main>
 
-      {/* Real state of the game, not claims about it. Both render nothing at
-          all until there's something true to show -- which is the whole point
-          of putting them here instead of another row of stated mechanics. */}
-      <ChampionSpotlight champion={champion} />
-      <WinnersWall tracks={recentTracks} />
+      {/* Real state of the game, not claims about it. Grouped into ONE band
+          with a shared width and a single top hairline, so the champion and
+          the wall read as two parts of "here's what's happening" rather than
+          two unrelated cards stacked down the page. Both still render nothing
+          at all until there's something true to show. */}
+      {(champion || recentTracks.length > 0) && (
+        <section className="relative z-10">
+          <div
+            className="max-w-5xl mx-auto h-px"
+            aria-hidden="true"
+            style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent)' }}
+          />
+          <div className="py-10">
+            <ChampionSpotlight champion={champion} />
+            <WinnersWall tracks={recentTracks} />
+          </div>
+        </section>
+      )}
 
       <LandingFaq />
 
