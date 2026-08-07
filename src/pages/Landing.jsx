@@ -177,8 +177,8 @@ function Landing() {
             style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent)' }}
           />
           <div className="py-10">
-            <ChampionSpotlight champion={champion} />
             <WinnersWall tracks={recentTracks} />
+            <ChampionSpotlight champion={champion} />
           </div>
         </section>
       )}
