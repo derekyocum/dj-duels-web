@@ -79,26 +79,47 @@ function FaqItem({ item, isOpen, onToggle }) {
 }
 
 function LandingFaq() {
+  // The whole section is folded away by default. Six open questions is a wall
+  // of text at the bottom of a page most people are here to act on, not read;
+  // collapsed, it's one quiet line that stays out of the way until wanted.
+  const [sectionOpen, setSectionOpen] = useState(false)
   const [openIndex, setOpenIndex] = useState(null)
 
   return (
-    <section className="relative z-10 py-20 px-6">
+    <section className="relative z-10 py-16 px-6">
       <div className="max-w-2xl mx-auto">
-        {/* A quiet section label rather than a headline -- this is reference
-            material someone drops into, not a pitch that needs to shout. */}
-        <p className="text-text-muted/70 text-[11px] font-bold uppercase tracking-[0.24em] text-center mb-8">
-          Before you start
-        </p>
-        <div>
-          {FAQ.map((item, i) => (
-            <FaqItem
-              key={item.q}
-              item={item}
-              isOpen={openIndex === i}
-              onToggle={() => setOpenIndex(openIndex === i ? null : i)}
-            />
-          ))}
-        </div>
+        {/* The label itself is the toggle -- a separate control next to it
+            would be another thing to notice on a page already being quietened. */}
+        <button
+          onClick={() => setSectionOpen(!sectionOpen)}
+          aria-expanded={sectionOpen}
+          className="group mx-auto flex items-center gap-2.5 px-3 py-2 cursor-pointer"
+        >
+          <span className="text-text-muted/70 group-hover:text-text-secondary text-[11px] font-bold uppercase tracking-[0.24em] transition-colors">
+            Before you start
+          </span>
+          <span
+            className={`text-text-muted/50 group-hover:text-text-secondary text-[10px] transition-all duration-300 ${
+              sectionOpen ? 'rotate-180' : ''
+            }`}
+            aria-hidden="true"
+          >
+            ▾
+          </span>
+        </button>
+
+        {sectionOpen && (
+          <div className="mt-4">
+            {FAQ.map((item, i) => (
+              <FaqItem
+                key={item.q}
+                item={item}
+                isOpen={openIndex === i}
+                onToggle={() => setOpenIndex(openIndex === i ? null : i)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )

@@ -209,7 +209,7 @@ body {
 }
 
 @utility animate-marquee {
-  animation: marquee 90s linear infinite;
+  animation: marquee 60s linear infinite;
 }
 
 /* Stop for anyone actually looking at it -- the cards are interactive (each

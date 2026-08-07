@@ -30,7 +30,10 @@ function Landing() {
   useEffect(() => {
     let ignore = false
     fetchChampion().then((c) => { if (!ignore) setChampion(c) })
-    fetchRecentTracks().then((t) => { if (!ignore) setRecentTracks(t) })
+    // Deliberately over-fetches: WinnersWall collapses repeat wins of the same
+    // song into one card, so asking for exactly a wall's worth would leave a
+    // short wall as soon as anyone wins twice with the same track.
+    fetchRecentTracks(30).then((t) => { if (!ignore) setRecentTracks(t) })
     return () => { ignore = true }
   }, [])
 

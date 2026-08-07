@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 import { fireTrack } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
@@ -7,6 +7,29 @@ import { useAuth } from '../context/AuthContext'
 // wall, so the whole section hides itself instead. Raise it once there's real
 // traffic; the point is never to advertise emptiness.
 const MIN_TRACKS = 3
+// w-40 card + gap-5. Only used to decide whether the strip is long enough to
+// need looping -- an estimate is fine, and being slightly off just means the
+// loop engages one card early or late.
+const CARD_STRIDE_PX = 180
+
+/**
+ * One card per SONG, not per win.
+ *
+ * A track that wins several duels is several rows in dj-duels-matches, which
+ * is correct as history but reads as a bug on a wall of covers -- the same
+ * album twice in one glance looks like a rendering fault, not a popular song.
+ * The list arrives newest-first, so keeping the first occurrence keeps the
+ * most recent win (and its fire count) and drops the older ones.
+ */
+function dedupeBySong(tracks) {
+  const seen = new Set()
+  return tracks.filter((t) => {
+    const key = `${(t.trackName ?? '').toLowerCase()}|${(t.artist ?? '').toLowerCase()}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 
 function FireButton({ track, fired, onFire }) {
   const { isAuthenticated } = useAuth()
@@ -66,14 +89,37 @@ function TrackCard({ track, fired, onFire }) {
  * shows what the room liked without publishing anyone's listening habits to
  * the open internet.
  *
- * The list is rendered TWICE back to back -- that's what makes the marquee
- * loop seamlessly (see index.css). A fired state is tracked by matchId rather
- * than by position, so lighting one copy lights its twin too.
+ * Only loops when there's actually enough to loop with. A seamless marquee
+ * needs the list rendered twice back to back, which means every song is on
+ * screen twice -- fine once the wall is long, but with a handful of tracks it
+ * just looks like the same albums over and over. Below that threshold the
+ * strip sits still and shows each song exactly once. Fired state is keyed by
+ * matchId, not position, so lighting one copy lights its twin too.
  */
 function WinnersWall({ tracks }) {
   const [firedIds, setFiredIds] = useState(() => new Set())
+  const viewportRef = useRef(null)
+  const [viewportWidth, setViewportWidth] = useState(0)
 
-  if (!tracks || tracks.length < MIN_TRACKS) return null
+  // One card per song, so a repeat winner doesn't read as a rendering fault.
+  const songs = useMemo(() => dedupeBySong(tracks ?? []), [tracks])
+
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    const measure = () => setViewportWidth(el.clientWidth)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [songs.length])
+
+  if (songs.length < MIN_TRACKS) return null
+
+  // Duplicating is what makes the loop seamless, so only pay for it (in
+  // visible repetition) once the strip genuinely overflows.
+  const shouldLoop = viewportWidth > 0 && songs.length * CARD_STRIDE_PX > viewportWidth
+  const rendered = shouldLoop ? [...songs, ...songs] : songs
 
   const handleFire = async (matchId) => {
     // Optimistic: the count is a vanity number, and waiting on a round trip to
@@ -124,11 +170,14 @@ function WinnersWall({ tracks }) {
           kept low for the same reason. */}
       <div className="relative">
         <div
+          ref={viewportRef}
           className="overflow-x-auto no-scrollbar"
           style={{ maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' }}
         >
-          <div className="flex gap-5 w-max px-6 animate-marquee">
-            {[...tracks, ...tracks].map((track, i) => (
+          {/* justify-center when it fits: a short, still strip should sit in
+              the middle rather than hug the left edge under the centred label. */}
+          <div className={`flex gap-5 px-6 ${shouldLoop ? 'w-max animate-marquee' : 'justify-center'}`}>
+            {rendered.map((track, i) => (
               <TrackCard
                 key={`${track.matchId}-${i}`}
                 track={track}
