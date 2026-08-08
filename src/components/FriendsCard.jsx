@@ -1,18 +1,12 @@
 import { useState } from 'react'
 import { sendFriendRequest, acceptFriendRequest, removeFriend } from '../utils/api'
+import { useAvatars } from '../utils/useAvatars'
+import Avatar from './Avatar'
 
-function Avatar({ username }) {
-  return (
-    <div className="w-9 h-9 shrink-0 rounded-full bg-neon-cyan/15 border border-neon-cyan/40 flex items-center justify-center">
-      <span className="text-neon-cyan font-bold text-sm">{username.charAt(0).toUpperCase()}</span>
-    </div>
-  )
-}
-
-function Row({ username, children }) {
+function Row({ username, avatar, children }) {
   return (
     <div className="flex items-center gap-3 px-6 py-3">
-      <Avatar username={username} />
+      <Avatar username={username} avatarId={avatar?.avatarId} avatarColor={avatar?.avatarColor} size={36} />
       <span className="flex-1 min-w-0 truncate text-text-primary text-sm font-medium">{username}</span>
       <div className="flex items-center gap-2 shrink-0">{children}</div>
     </div>
@@ -31,6 +25,12 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
+
+  const avatars = useAvatars([
+    ...friends.map((f) => f.username),
+    ...incoming.map((f) => f.username),
+    ...outgoing.map((f) => f.username),
+  ])
 
   // Shared wrapper so every action gets the same busy-lock, error surfacing and
   // refetch without repeating the try/catch four times.
@@ -101,7 +101,7 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
             Wants to be friends
           </p>
           {incoming.map((f) => (
-            <Row key={f.username} username={f.username}>
+            <Row key={f.username} username={f.username} avatar={avatars[f.username]}>
               <button
                 onClick={() => run(() => acceptFriendRequest(f.username), `You and ${f.username} are now friends`)}
                 disabled={busy}
@@ -130,7 +130,7 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
           </p>
         ) : (
           friends.map((f) => (
-            <Row key={f.username} username={f.username}>
+            <Row key={f.username} username={f.username} avatar={avatars[f.username]}>
               <button
                 onClick={() => run(() => removeFriend(f.username))}
                 disabled={busy}
@@ -149,7 +149,7 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
             Waiting on them
           </p>
           {outgoing.map((f) => (
-            <Row key={f.username} username={f.username}>
+            <Row key={f.username} username={f.username} avatar={avatars[f.username]}>
               <span className="text-text-muted text-xs">Pending</span>
               <button
                 onClick={() => run(() => removeFriend(f.username))}

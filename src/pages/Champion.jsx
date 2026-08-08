@@ -5,32 +5,10 @@ import AppNav from '../components/AppNav'
 import BracketPanel from '../components/BracketPanel'
 import Confetti from '../components/Confetti'
 import Footer from '../components/Footer'
+import Avatar from '../components/Avatar'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
-
-const COLOR_BG = {
-  'neon-blue': 'bg-neon-blue/20',
-  'neon-pink': 'bg-neon-pink/20',
-  'neon-purple': 'bg-neon-purple/20',
-  'neon-green': 'bg-neon-green/20',
-  'neon-yellow': 'bg-neon-yellow/20',
-}
-
-const COLOR_BORDER = {
-  'neon-blue': 'border-neon-blue/50',
-  'neon-pink': 'border-neon-pink/50',
-  'neon-purple': 'border-neon-purple/50',
-  'neon-green': 'border-neon-green/50',
-  'neon-yellow': 'border-neon-yellow/50',
-}
-
-const COLOR_TEXT = {
-  'neon-blue': 'text-neon-blue',
-  'neon-pink': 'text-neon-pink',
-  'neon-purple': 'text-neon-purple',
-  'neon-green': 'text-neon-green',
-  'neon-yellow': 'text-neon-yellow',
-}
+import { useAvatars } from '../utils/useAvatars'
 
 const FIREWORK_COLORS = ['#0080FF', '#8B2FE8', '#FF2D95', '#39FF14', '#FFE01F']
 
@@ -94,15 +72,13 @@ function formatTime(s) {
 // Small avatar chip for the participants row. The two battlers carry their
 // revealed vote tallies (votes stay anonymous during the round -- this page is
 // now the only reveal point, since the interstitial RoundWinner page is gone).
-function ParticipantChip({ player, votes, isChampion }) {
-  const bg = COLOR_BG[player.color] || COLOR_BG['neon-blue']
-  const border = COLOR_BORDER[player.color] || COLOR_BORDER['neon-blue']
-  const text = COLOR_TEXT[player.color] || COLOR_TEXT['neon-blue']
+function ParticipantChip({ player, votes, isChampion, avatars = {} }) {
+  const avatar = avatars[player.name]
 
   return (
     <div className={`flex flex-col items-center gap-1.5 ${isChampion ? '' : 'opacity-70'}`}>
-      <div className={`relative w-12 h-12 rounded-full ${bg} border-2 ${border} flex items-center justify-center`}>
-        <span className={`${text} font-bold text-lg`}>{player.name.charAt(0)}</span>
+      <div className="relative">
+        <Avatar username={player.name} avatarId={avatar?.avatarId} avatarColor={avatar?.avatarColor} size={48} />
         {isChampion && <span className="absolute -top-2.5 text-sm">👑</span>}
       </div>
       <span className="text-text-secondary text-xs font-medium truncate max-w-[72px]">{player.name}</span>
@@ -149,10 +125,8 @@ function Champion() {
   const gameSentRef = useRef(false)
   const autoScrollRef = useRef(null)
 
-  const color = champion?.color || 'neon-blue'
-  const bg = COLOR_BG[color] || COLOR_BG['neon-blue']
-  const border = COLOR_BORDER[color] || COLOR_BORDER['neon-blue']
-  const text = COLOR_TEXT[color] || COLOR_TEXT['neon-blue']
+  const avatars = useAvatars(allPlayers.map((p) => p.name))
+  const championAvatar = avatars[champion?.name]
 
   useEffect(() => {
     if (tracks.length <= 1) return
@@ -240,8 +214,14 @@ function Champion() {
         </div>
 
         <div className="mt-8 mb-6">
-          <div className={`w-28 h-28 rounded-full ${bg} border-4 ${border} shadow-[0_0_60px_rgba(0,128,255,0.3)] flex items-center justify-center mx-auto`}>
-            <span className={`${text} font-bold text-5xl`}>{champion?.name?.charAt(0)}</span>
+          <div className="w-28 h-28 mx-auto rounded-full shadow-[0_0_60px_rgba(0,128,255,0.3)]">
+            <Avatar
+              username={champion?.name}
+              avatarId={championAvatar?.avatarId}
+              avatarColor={championAvatar?.avatarColor}
+              size={112}
+              borderWidth={4}
+            />
           </div>
           <p className="text-text-primary font-bold text-2xl text-center mt-4">{champion?.name}</p>
           {showTrophies && (
@@ -344,6 +324,7 @@ function Champion() {
                   player={p}
                   votes={votesByName[p.name]}
                   isChampion={p.name === champion?.name}
+                  avatars={avatars}
                 />
               ))}
             </div>

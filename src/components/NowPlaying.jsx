@@ -39,7 +39,7 @@ function formatTime(ms) {
  * sees the art, the title and the progress bar moving with everyone else, and
  * gets told why they can't hear it — rather than the room silently desyncing.
  */
-function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesRequired, onSkipVote }) {
+function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesRequired, onSkipVote, avatars = {} }) {
   const [spotifyStatus, setSpotifyStatus] = useState(getSpotifyPlaybackStatus())
   const [voted, setVoted] = useState(false)
   // 'ok' | 'corrected' | 'paused' | 'elsewhere' | 'idle' -- see
@@ -297,7 +297,12 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <LoungeAvatar username={current.addedBy} size="sm" />
+            <LoungeAvatar
+              username={current.addedBy}
+              avatarId={avatars[current.addedBy]?.avatarId}
+              avatarColor={avatars[current.addedBy]?.avatarColor}
+              size="sm"
+            />
             <span className="text-text-muted text-xs truncate">{current.addedBy}&apos;s pick</span>
           </div>
           <button

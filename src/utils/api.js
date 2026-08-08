@@ -244,6 +244,39 @@ export async function setMyAvatar(avatarId) {
   return data
 }
 
+// Only matters when avatarId is unset -- the color of the initials-letter
+// fallback, independent of any chosen icon.
+export async function setMyAvatarColor(avatarColor) {
+  const response = await fetch(`${API_BASE}/api/stats/me/avatar-color`, {
+    method: 'PUT',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ avatarColor }),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to save color')
+  return data
+}
+
+/** Resolves chosen icon/color for a batch of usernames in one request --
+ *  what a duel roster or lounge room uses to show everyone's real profile
+ *  picture instead of one request per player. Never throws: an avatar lookup
+ *  failing must not break the screen it's decorating, so callers get an
+ *  empty list and fall back to plain initials. */
+export async function fetchAvatars(usernames) {
+  const unique = [...new Set(usernames)].filter(Boolean)
+  if (unique.length === 0) return []
+  try {
+    const response = await fetch(`${API_BASE}/api/stats/avatars?usernames=${encodeURIComponent(unique.join(','))}`, {
+      headers: authHeaders(),
+    })
+    if (!response.ok) return []
+    const data = await response.json()
+    return Array.isArray(data) ? data : []
+  } catch {
+    return []
+  }
+}
+
 // ── Showcase (landing page) ──────────────────────────────────────────────────
 // The two reads are PUBLIC: the landing page renders for signed-out visitors,
 // so these deliberately send no auth header. Both resolve to null/[] rather

@@ -1,12 +1,13 @@
-const COLOR_CLASSES = {
-  'neon-blue': { bg: 'bg-neon-blue/20', border: 'border-neon-blue/50', text: 'text-neon-blue', cardBorder: 'border-neon-blue/30' },
-  'neon-pink': { bg: 'bg-neon-pink/20', border: 'border-neon-pink/50', text: 'text-neon-pink', cardBorder: 'border-neon-pink/30' },
-  'neon-purple': { bg: 'bg-neon-purple/20', border: 'border-neon-purple/50', text: 'text-neon-purple', cardBorder: 'border-neon-purple/30' },
-  'neon-green': { bg: 'bg-neon-green/20', border: 'border-neon-green/50', text: 'text-neon-green', cardBorder: 'border-neon-green/30' },
-  'neon-yellow': { bg: 'bg-neon-yellow/20', border: 'border-neon-yellow/50', text: 'text-neon-yellow', cardBorder: 'border-neon-yellow/30' },
+import Avatar from './Avatar'
+
+// Card border only -- the circle's own color now comes from the player's
+// real avatar (see Avatar.jsx), not the duel-session slot color below.
+const CARD_BORDER = {
+  'neon-blue': 'border-neon-blue/30', 'neon-pink': 'border-neon-pink/30', 'neon-purple': 'border-neon-purple/30',
+  'neon-green': 'border-neon-green/30', 'neon-yellow': 'border-neon-yellow/30',
 }
 
-function PlayerSlot({ player }) {
+function PlayerSlot({ player, avatars = {} }) {
   if (!player) {
     return (
       <div className="w-36 bg-card/50 border border-dashed border-text-muted/20 rounded-xl p-5 flex flex-col items-center gap-3 animate-pulse-border">
@@ -18,15 +19,16 @@ function PlayerSlot({ player }) {
     )
   }
 
-  const colors = COLOR_CLASSES[player.color] || COLOR_CLASSES['neon-blue']
+  const cardBorder = CARD_BORDER[player.color] || CARD_BORDER['neon-blue']
 
   return (
-    <div className={`w-36 bg-card border ${colors.cardBorder} rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-300`}>
-      <div className={`w-12 h-12 rounded-full ${colors.bg} border-2 ${colors.border} flex items-center justify-center`}>
-        <span className={`${colors.text} font-bold text-lg`}>
-          {player.name.charAt(0)}
-        </span>
-      </div>
+    <div className={`w-36 bg-card border ${cardBorder} rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-300`}>
+      <Avatar
+        username={player.name}
+        avatarId={avatars[player.name]?.avatarId}
+        avatarColor={avatars[player.name]?.avatarColor}
+        size={48}
+      />
       <div className="flex flex-col items-center gap-1">
         <span className="text-text-primary text-sm font-semibold">{player.name}</span>
         {player.isHost && (

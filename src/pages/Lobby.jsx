@@ -10,6 +10,7 @@ import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 import { PLAYER_COLORS } from '../utils/duelUtils'
+import { useAvatars } from '../utils/useAvatars'
 import { DEFAULT_SETTINGS, MAX_PLAYERS, describeSettings } from '../utils/lobbyRules'
 
 // How long to sit on a host's rapid setting changes before telling the server.
@@ -45,6 +46,7 @@ function Lobby() {
   // Trust the roster once we have it; the URL flag is only an optimistic guess
   // for the very first render, before any PLAYER_JOINED has arrived.
   const me = players.find((p) => p.name === user?.username)
+  const avatars = useAvatars(players.map((p) => p.name))
   const isHost = me ? me.isHost : urlClaimsHost
 
   const handleGameEvent = useCallback((event) => {
@@ -282,7 +284,7 @@ function Lobby() {
 
         <div className="flex flex-wrap justify-center gap-4 w-full max-w-2xl mb-10">
           {slots.map((player, i) => (
-            <PlayerSlot key={i} player={player} />
+            <PlayerSlot key={i} player={player} avatars={avatars} />
           ))}
         </div>
 

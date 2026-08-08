@@ -11,6 +11,7 @@ import SuddenDeathBanner, { SUDDEN_DEATH_BG } from '../components/SuddenDeathBan
 import { FinalsBadge, FinalsGlow } from '../components/FinalsBadge'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
+import { useAvatars } from '../utils/useAvatars'
 
 // 'eliminated' if the user already lost a decided match in this bracket, else
 // 'alive' (still in it — battling now or waiting for a later round). null when
@@ -50,6 +51,7 @@ function Faceoff() {
   const isBattler = user?.username === battler1?.name || user?.username === battler2?.name
   const status = bracketStatus(bracket, user?.username)
   const opponent = user?.username === battler2?.name ? battler1 : battler2
+  const avatars = useAvatars([battler1?.name, battler2?.name])
 
   const faceoffEndsAt = location.state?.faceoffEndsAt
 
@@ -260,6 +262,7 @@ function Faceoff() {
             roundLabel={roundLabel}
             suddenDeath={isSuddenDeath}
             finals={isFinals}
+            avatars={avatars}
           />
         )}
       </main>

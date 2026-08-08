@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
 import Footer from '../components/Footer'
+import Avatar from '../components/Avatar'
 import { useAuth } from '../context/AuthContext'
 import { fetchLeaderboard, fetchMyStats } from '../utils/api'
 
@@ -21,9 +22,7 @@ function Row({ entry, index, isMe }) {
       }`}
     >
       <RankBadge index={index} />
-      <div className="w-9 h-9 rounded-full bg-neon-blue/15 border border-neon-blue/30 flex items-center justify-center shrink-0">
-        <span className="text-neon-blue font-bold text-sm">{entry.username?.charAt(0)?.toUpperCase()}</span>
-      </div>
+      <Avatar username={entry.username} avatarId={entry.avatarId} avatarColor={entry.avatarColor} size={36} />
       <span className={`flex-1 truncate text-sm font-semibold ${isMe ? 'text-neon-blue' : 'text-text-primary'}`}>
         {entry.username}{isMe && <span className="text-text-muted font-normal"> (you)</span>}
       </span>

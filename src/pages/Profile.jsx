@@ -5,10 +5,10 @@ import AppNav from '../components/AppNav'
 import PlatformButton from '../components/PlatformButton'
 import FriendsCard from '../components/FriendsCard'
 import AvatarPicker from '../components/AvatarPicker'
+import Avatar from '../components/Avatar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform, fetchMyStats, fetchFriends } from '../utils/api'
-import { avatarById, AVATAR_BG, AVATAR_BORDER, AVATAR_TEXT } from '../utils/avatarOptions'
 
 const PLATFORM_NAMES = { spotify: 'Spotify', youtube: 'YouTube' }
 const DEFAULT_STATUS = [{ platform: 'spotify', connected: false }, { platform: 'youtube', connected: false }]
@@ -48,6 +48,7 @@ function Profile() {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
   const [avatarId, setAvatarId] = useState(null)
+  const [avatarColor, setAvatarColor] = useState(null)
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const justConnected = searchParams.get('connected')
@@ -69,7 +70,7 @@ function Profile() {
     })
     // Best-effort: if stats fail to load, the card just shows zeros.
     fetchMyStats()
-      .then((s) => { if (!ignore) { setStats(s); setAvatarId(s.avatarId ?? null) } })
+      .then((s) => { if (!ignore) { setStats(s); setAvatarId(s.avatarId ?? null); setAvatarColor(s.avatarColor ?? null) } })
       .catch(() => {})
     loadFriendsData().then((data) => {
       if (ignore) return
@@ -118,9 +119,7 @@ function Profile() {
     }
   }
 
-  const initial = user?.username?.charAt(0).toUpperCase() ?? '?'
   const byPlatform = Object.fromEntries(platforms.map((p) => [p.platform, p]))
-  const avatar = avatarById(avatarId)
 
   return (
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
@@ -150,21 +149,11 @@ function Profile() {
           <div className="flex flex-col items-center mb-10">
             <button
               onClick={() => setPickerOpen(true)}
-              className="relative w-24 h-24 rounded-full flex items-center justify-center mb-4 cursor-pointer group"
+              className="relative mb-4 cursor-pointer group"
               aria-label="Change profile picture"
               title="Change profile picture"
             >
-              {avatar ? (
-                <div className={`w-24 h-24 rounded-full ${AVATAR_BG[avatar.color]} border-2 ${AVATAR_BORDER[avatar.color]} flex items-center justify-center`}>
-                  <span className={AVATAR_TEXT[avatar.color]}>
-                    <avatar.Icon size={40} />
-                  </span>
-                </div>
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-neon-blue/20 border-2 border-neon-blue/50 shadow-[0_0_40px_rgba(0,128,255,0.2)] flex items-center justify-center">
-                  <span className="text-neon-blue font-black text-4xl">{initial}</span>
-                </div>
-              )}
+              <Avatar username={user?.username} avatarId={avatarId} avatarColor={avatarColor} size={96} borderWidth={2} />
               <span className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-card border border-text-muted/30 flex items-center justify-center text-xs group-hover:border-ember/50 transition-colors">
                 ✏️
               </span>
@@ -285,7 +274,8 @@ function Profile() {
       {pickerOpen && (
         <AvatarPicker
           current={avatarId}
-          onSaved={setAvatarId}
+          currentColor={avatarColor}
+          onSaved={({ avatarId: id, avatarColor: color }) => { setAvatarId(id); setAvatarColor(color) }}
           onClose={() => setPickerOpen(false)}
         />
       )}

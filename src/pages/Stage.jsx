@@ -5,11 +5,13 @@ import RoundIntro from '../components/RoundIntro'
 import AppNav from '../components/AppNav'
 import Reconnecting from '../components/Reconnecting'
 import Footer from '../components/Footer'
+import Avatar from '../components/Avatar'
 import { SuddenDeathBadge, SUDDEN_DEATH_BG } from '../components/SuddenDeathBanner'
 import { FinalsBadge, FinalsGlow } from '../components/FinalsBadge'
 import { orbColorsForRound } from '../utils/orbColors'
 import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
+import { useAvatars } from '../utils/useAvatars'
 import {
   ensureSpotifyPlaybackInitialized,
   getSpotifyPlaybackStatus,
@@ -105,22 +107,6 @@ function SpotifyEmbed({ trackId }) {
   )
 }
 
-const COLOR_BG = {
-  'neon-blue': 'bg-neon-blue/20',
-  'neon-pink': 'bg-neon-pink/20',
-  'neon-purple': 'bg-neon-purple/20',
-  'neon-green': 'bg-neon-green/20',
-  'neon-yellow': 'bg-neon-yellow/20',
-}
-
-const COLOR_BORDER = {
-  'neon-blue': 'border-neon-blue/50',
-  'neon-pink': 'border-neon-pink/50',
-  'neon-purple': 'border-neon-purple/50',
-  'neon-green': 'border-neon-green/50',
-  'neon-yellow': 'border-neon-yellow/50',
-}
-
 const COLOR_TEXT = {
   'neon-blue': 'text-neon-blue',
   'neon-pink': 'text-neon-pink',
@@ -161,15 +147,13 @@ function formatDuration(ms) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function AudienceMember({ player, isCurrentPerformer, hasVoted }) {
-  const bg = COLOR_BG[player.color] || COLOR_BG['neon-blue']
-  const border = COLOR_BORDER[player.color] || COLOR_BORDER['neon-blue']
-  const text = COLOR_TEXT[player.color] || COLOR_TEXT['neon-blue']
+function AudienceMember({ player, isCurrentPerformer, hasVoted, avatars = {} }) {
+  const avatar = avatars[player.name]
 
   return (
     <div className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${isCurrentPerformer ? 'scale-110' : 'opacity-60'}`}>
-      <div className={`relative w-10 h-10 rounded-full ${bg} border-2 ${border} flex items-center justify-center ${isCurrentPerformer ? 'ring-2 ring-neon-blue/40' : ''}`}>
-        <span className={`${text} font-bold text-sm`}>{player.name.charAt(0)}</span>
+      <div className={`relative rounded-full ${isCurrentPerformer ? 'ring-2 ring-neon-blue/40' : ''}`}>
+        <Avatar username={player.name} avatarId={avatar?.avatarId} avatarColor={avatar?.avatarColor} size={40} />
         {hasVoted && (
           <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-neon-green border border-midnight flex items-center justify-center text-[8px] font-bold text-midnight">✓</span>
         )}
@@ -191,6 +175,7 @@ function Stage() {
     roundLabel, bracket,
   } = location.state ?? {}
   const round = parseInt(roundNum, 10)
+  const avatars = useAvatars([player1?.name, player2?.name, ...allPlayers.map((p) => p.name)])
   // 1+ when this match is a tiebreak replay; drives the darker treatment.
   const suddenDeathRound = location.state?.suddenDeathRound ?? 0
   const isSuddenDeath = suddenDeathRound > 0
@@ -473,9 +458,7 @@ function Stage() {
 
   const color = current?.player?.color || 'neon-blue'
   const textClass = COLOR_TEXT[color] || COLOR_TEXT['neon-blue']
-  const borderClass = COLOR_BORDER[color] || COLOR_BORDER['neon-blue']
   const glowClass = COLOR_GLOW[color] || COLOR_GLOW['neon-blue']
-  const bgClass = COLOR_BG[color] || COLOR_BG['neon-blue']
 
   const isYouTube = current?.track?.source === 'youtube' && !!current?.track?.videoId
   const timerIsLow = trackTimeLeft < 10
@@ -587,9 +570,12 @@ function Stage() {
         ) : (
           <>
             <div className={`flex items-center gap-3 mb-6 transition-all duration-700 ${phase === 'intro' ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
-              <div className={`w-10 h-10 rounded-full ${bgClass} border-2 ${borderClass} flex items-center justify-center`}>
-                <span className={`${textClass} font-bold text-sm`}>{current?.player?.name?.charAt(0)}</span>
-              </div>
+              <Avatar
+                username={current?.player?.name}
+                avatarId={avatars[current?.player?.name]?.avatarId}
+                avatarColor={avatars[current?.player?.name]?.avatarColor}
+                size={40}
+              />
               <div>
                 <p className={`${textClass} font-bold text-sm`}>{current?.player?.name}&apos;s pick</p>
                 <p className="text-text-muted text-xs">Track {currentTrackIndex + 1} of {tracks.length}</p>
@@ -772,6 +758,7 @@ function Stage() {
               player={p}
               isCurrentPerformer={p.name === current?.player?.name}
               hasVoted={currentSongVotes.voters.includes(p.name)}
+              avatars={avatars}
             />
           ))}
         </div>

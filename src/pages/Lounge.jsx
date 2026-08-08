@@ -10,6 +10,7 @@ import LoungeDeniedModal from '../components/LoungeDeniedModal'
 import { LOUNGE_ORBS } from '../utils/orbColors'
 import { useRoomSocket, useRoomEvents } from '../context/RoomSocketContext'
 import { useAuth } from '../context/AuthContext'
+import { useAvatars } from '../utils/useAvatars'
 
 /**
  * A friends-only room where everyone hears the same moment of the same track.
@@ -80,6 +81,21 @@ function Lounge() {
     send('lounge/skip-vote', { loungeId })
   }, [send, loungeId])
 
+  const members = state?.members ?? []
+
+  // Everyone whose picture could be on screen right now: the roster, plus
+  // whoever added the current track or something in the queue -- a queued
+  // track's addedBy isn't always a present member (they could have left).
+  // No memo needed: useAvatars stabilizes on a joined-string key internally,
+  // so a fresh array literal each render doesn't cause extra fetches.
+  // Called (like every hook here) before the denied-state early return below
+  // -- hooks can't be conditional.
+  const avatars = useAvatars([
+    ...members,
+    state?.current?.addedBy,
+    ...(state?.queue ?? []).map((q) => q.addedBy),
+  ])
+
   if (denied) {
     return (
       <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-ember-deep via-midnight to-midnight">
@@ -91,7 +107,6 @@ function Lounge() {
     )
   }
 
-  const members = state?.members ?? []
   const isHost = state?.host === user?.username
 
   return (
@@ -127,7 +142,13 @@ function Lounge() {
                     👑
                   </span>
                 )}
-                <LoungeAvatar username={m} present showName />
+                <LoungeAvatar
+                  username={m}
+                  avatarId={avatars[m]?.avatarId}
+                  avatarColor={avatars[m]?.avatarColor}
+                  present
+                  showName
+                />
               </div>
             ))}
             {members.length === 0 && (
@@ -142,12 +163,14 @@ function Lounge() {
             skipVotes={state?.skipVotes ?? 0}
             skipVotesRequired={state?.skipVotesRequired ?? 1}
             onSkipVote={handleSkipVote}
+            avatars={avatars}
           />
 
           <LoungeQueue
             queue={state?.queue ?? []}
             onAdd={handleAddTrack}
             onRemove={handleRemove}
+            avatars={avatars}
           />
         </div>
       </main>

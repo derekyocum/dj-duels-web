@@ -1,6 +1,7 @@
 import {
   VinylIcon, HeadphonesIcon, MicrophoneIcon, SpeakerIcon, TurntableIcon, MixerIcon,
   BoomboxIcon, CassetteIcon, GuitarIcon, RadioIcon, PianoIcon, SoundwaveIcon,
+  TrumpetIcon, SaxophoneIcon, DrumKitIcon, ViolinIcon, SynthIcon, TambourineIcon,
 } from '../components/AvatarIcons'
 
 // Cycles through the same 7-color neon palette LoungeAvatar already uses
@@ -21,14 +22,28 @@ export const AVATAR_OPTIONS = [
   { id: 'radio', label: 'Radio', Icon: RadioIcon, color: 'neon-purple' },
   { id: 'piano', label: 'Piano keys', Icon: PianoIcon, color: 'neon-green' },
   { id: 'soundwave', label: 'Soundwave', Icon: SoundwaveIcon, color: 'neon-yellow' },
+  { id: 'trumpet', label: 'Trumpet', Icon: TrumpetIcon, color: 'neon-orange' },
+  { id: 'saxophone', label: 'Saxophone', Icon: SaxophoneIcon, color: 'neon-cyan' },
+  { id: 'drumkit', label: 'Drum kit', Icon: DrumKitIcon, color: 'neon-blue' },
+  { id: 'violin', label: 'Violin', Icon: ViolinIcon, color: 'neon-pink' },
+  { id: 'synth', label: 'Synthesizer', Icon: SynthIcon, color: 'neon-purple' },
+  { id: 'tambourine', label: 'Tambourine', Icon: TambourineIcon, color: 'neon-green' },
 ]
 
 export const avatarById = (id) => AVATAR_OPTIONS.find((a) => a.id === id) ?? null
 
-// Same literal-class-string idiom as LoungeAvatar.jsx's BG/BORDER/TEXT maps
-// (Tailwind needs the full class string present in source, not built via
-// interpolation) -- pulled out here since both the picker grid and Profile's
-// header circle need them.
+// The same 7-color neon palette every avatar option draws from, exposed on
+// its own for the initials-letter color picker (Profile lets you pick one of
+// these directly when you're not using an icon).
+export const COLOR_OPTIONS = [
+  'neon-blue', 'neon-pink', 'neon-purple', 'neon-green', 'neon-yellow', 'neon-orange', 'neon-cyan',
+]
+
+// Same literal-class-string idiom throughout (Tailwind needs the full class
+// string present in source, not built via interpolation) -- centralized here
+// since every avatar-rendering surface in the app (picker grid, Profile
+// header, duel roster, lounge presence, leaderboard, friends list) needs the
+// same four maps rather than each keeping its own copy.
 export const AVATAR_BG = {
   'neon-blue': 'bg-neon-blue/20', 'neon-pink': 'bg-neon-pink/20', 'neon-purple': 'bg-neon-purple/20',
   'neon-green': 'bg-neon-green/20', 'neon-yellow': 'bg-neon-yellow/20', 'neon-orange': 'bg-neon-orange/20',
@@ -43,4 +58,9 @@ export const AVATAR_TEXT = {
   'neon-blue': 'text-neon-blue', 'neon-pink': 'text-neon-pink', 'neon-purple': 'text-neon-purple',
   'neon-green': 'text-neon-green', 'neon-yellow': 'text-neon-yellow', 'neon-orange': 'text-neon-orange',
   'neon-cyan': 'text-neon-cyan',
+}
+export const AVATAR_DOT = {
+  'neon-blue': 'bg-neon-blue', 'neon-pink': 'bg-neon-pink', 'neon-purple': 'bg-neon-purple',
+  'neon-green': 'bg-neon-green', 'neon-yellow': 'bg-neon-yellow', 'neon-orange': 'bg-neon-orange',
+  'neon-cyan': 'bg-neon-cyan',
 }

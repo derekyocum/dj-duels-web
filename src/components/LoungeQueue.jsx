@@ -10,7 +10,7 @@ import { fetchSpotifyTrack, fetchYouTubeTrack, searchSpotifyTracks, searchYouTub
  * trackPicking.jsx) but with the lounge's warmer accent and no countdown or
  * lock-in pressure — you're adding to a queue, not committing to a battle.
  */
-function LoungeQueue({ queue, onAdd, onRemove }) {
+function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState('search') // 'search' | 'paste'
   const [platform, setPlatform] = useState('spotify')
@@ -185,7 +185,13 @@ function LoungeQueue({ queue, onAdd, onRemove }) {
                 </div>
                 {/* Whose pick this is, at a glance -- the avatar carries the
                     attribution now instead of a name buried in the subtext. */}
-                <LoungeAvatar username={entry.addedBy} size="sm" className="shrink-0" />
+                <LoungeAvatar
+                  username={entry.addedBy}
+                  avatarId={avatars[entry.addedBy]?.avatarId}
+                  avatarColor={avatars[entry.addedBy]?.avatarColor}
+                  size="sm"
+                  className="shrink-0"
+                />
                 {icon && <icon.Icon className="w-4 h-4 shrink-0" style={{ color: icon.color }} />}
                 <button
                   onClick={() => onRemove?.(entry.id)}

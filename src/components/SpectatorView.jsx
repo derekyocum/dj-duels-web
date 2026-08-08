@@ -1,4 +1,5 @@
 import CountdownTimer from './CountdownTimer'
+import Avatar from './Avatar'
 
 const COLOR_GLOW = {
   'neon-blue': 'shadow-[0_0_25px_rgba(0,128,255,0.3)]',
@@ -8,49 +9,24 @@ const COLOR_GLOW = {
   'neon-yellow': 'shadow-[0_0_25px_rgba(255,240,31,0.3)]',
 }
 
-const COLOR_BG = {
-  'neon-blue': 'bg-neon-blue/20',
-  'neon-pink': 'bg-neon-pink/20',
-  'neon-purple': 'bg-neon-purple/20',
-  'neon-green': 'bg-neon-green/20',
-  'neon-yellow': 'bg-neon-yellow/20',
-}
-
-const COLOR_BORDER = {
-  'neon-blue': 'border-neon-blue/50',
-  'neon-pink': 'border-neon-pink/50',
-  'neon-purple': 'border-neon-purple/50',
-  'neon-green': 'border-neon-green/50',
-  'neon-yellow': 'border-neon-yellow/50',
-}
-
-const COLOR_TEXT = {
-  'neon-blue': 'text-neon-blue',
-  'neon-pink': 'text-neon-pink',
-  'neon-purple': 'text-neon-purple',
-  'neon-green': 'text-neon-green',
-  'neon-yellow': 'text-neon-yellow',
-}
-
-function PlayerAvatar({ player }) {
+// The glow ring around each battler's avatar still comes from the duel-slot
+// color (P1 vs P2 contrast) -- only the circle's own content now comes from
+// the player's real avatar (see Avatar.jsx).
+function PlayerAvatar({ player, avatars = {} }) {
   const glow = COLOR_GLOW[player.color] || COLOR_GLOW['neon-blue']
-  const bg = COLOR_BG[player.color] || COLOR_BG['neon-blue']
-  const border = COLOR_BORDER[player.color] || COLOR_BORDER['neon-blue']
-  const text = COLOR_TEXT[player.color] || COLOR_TEXT['neon-blue']
+  const avatar = avatars[player.name]
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className={`w-20 h-20 rounded-full ${bg} border-2 ${border} ${glow} flex items-center justify-center transition-all duration-300`}>
-        <span className={`${text} font-bold text-3xl`}>
-          {player.name.charAt(0)}
-        </span>
+      <div className={`rounded-full ${glow} transition-all duration-300`}>
+        <Avatar username={player.name} avatarId={avatar?.avatarId} avatarColor={avatar?.avatarColor} size={80} borderWidth={2} />
       </div>
       <span className="text-text-primary font-semibold text-lg">{player.name}</span>
     </div>
   )
 }
 
-function SpectatorView({ player1, player2, timeLeft, totalTime = 90, roundNum, roundLabel, suddenDeath = false, finals = false }) {
+function SpectatorView({ player1, player2, timeLeft, totalTime = 90, roundNum, roundLabel, suddenDeath = false, finals = false, avatars = {} }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
       <span className={`inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full mb-8 ${
@@ -65,13 +41,13 @@ function SpectatorView({ player1, player2, timeLeft, totalTime = 90, roundNum, r
       </span>
 
       <div className="flex items-center gap-6 sm:gap-10 mb-10">
-        <PlayerAvatar player={player1} />
+        <PlayerAvatar player={player1} avatars={avatars} />
 
         <div className="flex flex-col items-center">
           <span className="text-3xl sm:text-4xl font-black text-text-muted/60 tracking-tighter">VS</span>
         </div>
 
-        <PlayerAvatar player={player2} />
+        <PlayerAvatar player={player2} avatars={avatars} />
       </div>
 
       <div className="mb-8">
