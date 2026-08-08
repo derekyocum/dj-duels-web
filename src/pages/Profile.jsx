@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
 import PlatformButton from '../components/PlatformButton'
-import FriendsCard from '../components/FriendsCard'
 import AvatarPicker from '../components/AvatarPicker'
 import Avatar from '../components/Avatar'
 import Footer from '../components/Footer'
@@ -42,8 +41,8 @@ function Profile() {
   const [platforms, setPlatforms] = useState([])
   const [connectingPlatform, setConnectingPlatform] = useState(null)
   const [stats, setStats] = useState(null)
-  const [friends, setFriends] = useState({ friends: [], incoming: [], outgoing: [] })
-  const [friendsLoading, setFriendsLoading] = useState(true)
+  // Count only -- the list itself lives on /friends now.
+  const [pendingRequests, setPendingRequests] = useState(0)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
@@ -53,15 +52,6 @@ function Profile() {
 
   const justConnected = searchParams.get('connected')
   const connectError = searchParams.get('connect_error')
-
-  // Passed to FriendsCard so it refetches the whole graph after every mutation
-  // rather than patching its own copy -- an accept moves someone between two
-  // buckets, so a refetch can't drift from what the server thinks. Called from
-  // event handlers only, never an effect.
-  const refreshFriends = useCallback(async () => {
-    const data = await loadFriendsData()
-    if (data) setFriends(data)
-  }, [])
 
   useEffect(() => {
     let ignore = false
@@ -73,9 +63,7 @@ function Profile() {
       .then((s) => { if (!ignore) { setStats(s); setAvatarId(s.avatarId ?? null); setAvatarColor(s.avatarColor ?? null) } })
       .catch(() => {})
     loadFriendsData().then((data) => {
-      if (ignore) return
-      if (data) setFriends(data)
-      setFriendsLoading(false)
+      if (!ignore && data) setPendingRequests(data.incoming?.length ?? 0)
     })
     return () => { ignore = true }
   }, [])
@@ -210,13 +198,20 @@ function Profile() {
             </div>
           </div>
 
-          <FriendsCard
-            friends={friends.friends}
-            incoming={friends.incoming}
-            outgoing={friends.outgoing}
-            loading={friendsLoading}
-            onChanged={refreshFriends}
-          />
+          {/* Friends moved to its own page (matching mobile), but the pending
+              count still surfaces here -- otherwise an incoming request has
+              nowhere to announce itself short of opening the page on spec. */}
+          <Link
+            to="/friends"
+            className="mt-8 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-neon-cyan/25 text-neon-cyan text-sm font-semibold hover:bg-neon-cyan/10 transition-colors"
+          >
+            👥 Friends
+            {pendingRequests > 0 && (
+              <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-neon-cyan/15 border border-neon-cyan/30">
+                {pendingRequests}
+              </span>
+            )}
+          </Link>
 
           {/* Connect Your Music */}
           <div className="bg-card/60 border border-text-muted/15 rounded-2xl overflow-hidden mt-8">

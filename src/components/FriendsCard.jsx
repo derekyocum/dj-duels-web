@@ -14,11 +14,15 @@ function Row({ username, avatar, children }) {
 }
 
 /**
- * Friends list + request flow. Every mutation refetches the whole graph via
- * onChanged rather than patching local state: the three buckets are derived
- * server-side and a single action can move someone between two of them (an
- * accept empties an incoming row AND adds a friend), so a refetch is both
- * simpler and can't drift from what the server actually thinks.
+ * Friends list + request flow. Deliberately headerless -- its only consumer is
+ * the Friends page, which supplies the title and the pending-request badge, so
+ * repeating them here would just be two "Friends" labels stacked on one screen.
+ *
+ * Every mutation refetches the whole graph via onChanged rather than patching
+ * local state: the three buckets are derived server-side and a single action
+ * can move someone between two of them (an accept empties an incoming row AND
+ * adds a friend), so a refetch is both simpler and can't drift from what the
+ * server actually thinks.
  */
 function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onChanged }) {
   const [username, setUsername] = useState('')
@@ -60,16 +64,7 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
   }
 
   return (
-    <div className="bg-card/60 border border-text-muted/15 rounded-2xl overflow-hidden mt-8">
-      <div className="px-6 py-4 border-b border-text-muted/10 flex items-center justify-between">
-        <h2 className="text-text-primary font-semibold text-sm">Friends</h2>
-        {incoming.length > 0 && (
-          <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">
-            {incoming.length} request{incoming.length === 1 ? '' : 's'}
-          </span>
-        )}
-      </div>
-
+    <div className="bg-card/60 border border-text-muted/15 rounded-2xl overflow-hidden">
       <form onSubmit={handleAdd} className="px-6 py-4 border-b border-text-muted/10 flex gap-2">
         <input
           value={username}

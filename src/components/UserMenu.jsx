@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../context/AuthContext'
 
 // Hamburger dropdown shown wherever a signed-in user needs quick access to
-// Profile / Leaderboard / Sign Out -- replaces the profile-pill + separate
+// Profile / Friends / Leaderboard / Sign Out -- replaces the profile-pill + separate
 // sign-out button that used to be duplicated across Landing/Profile/
 // Leaderboard's own hand-rolled navs.
 //
@@ -56,6 +56,14 @@ function UserMenu() {
               className="block px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors no-underline outline-none cursor-pointer"
             >
               Profile
+            </Link>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item asChild>
+            <Link
+              to="/friends"
+              className="block px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors no-underline outline-none cursor-pointer"
+            >
+              Friends
             </Link>
           </DropdownMenu.Item>
           <DropdownMenu.Item asChild>
