@@ -66,7 +66,7 @@ function FireButton({ track, fired, onFire }) {
 
 function TrackCard({ track, fired, onFire }) {
   return (
-    <div className="shrink-0 w-40">
+    <div className="shrink-0 w-40 flex flex-col items-center text-center">
       <div className="relative w-40 h-40 rounded-xl overflow-hidden bg-card border border-text-muted/10">
         {track.albumArtUrl ? (
           <img src={track.albumArtUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
@@ -74,8 +74,8 @@ function TrackCard({ track, fired, onFire }) {
           <div className="w-full h-full flex items-center justify-center text-4xl">🎵</div>
         )}
       </div>
-      <p className="mt-2 text-text-primary text-sm font-semibold truncate">{track.trackName}</p>
-      <p className="text-text-muted text-xs truncate mb-2">{track.artist}</p>
+      <p className="mt-2 w-full text-text-primary text-sm font-semibold truncate">{track.trackName}</p>
+      <p className="w-full text-text-muted text-xs truncate mb-2">{track.artist}</p>
       <FireButton track={track} fired={fired} onFire={onFire} />
     </div>
   )
