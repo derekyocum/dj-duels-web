@@ -105,13 +105,17 @@ export function CassetteIcon({ size = 24 }) {
   )
 }
 
+// Upright, with frets and a headstock. The old diagonal body-plus-thin-stick
+// version read as a magnifying glass -- the frets are what stop it.
 export function GuitarIcon({ size = 24 }) {
   return (
     <Icon size={size}>
-      <ellipse cx="9" cy="16" rx="6" ry="5" />
-      <circle cx="9" cy="16" r="1.8" />
-      <rect x="10.5" y="3" width="2" height="12" />
-      <rect x="10" y="2" width="3" height="2" rx="0.5" fill="currentColor" stroke="none" />
+      <ellipse cx="12" cy="17.5" rx="5.5" ry="4.5" />
+      <circle cx="12" cy="17.5" r="1.5" />
+      <path d="M10.5 13.5V5h3v8.5" />
+      <line x1="10.5" y1="7.2" x2="13.5" y2="7.2" />
+      <line x1="10.5" y1="9.8" x2="13.5" y2="9.8" />
+      <rect x="9.9" y="2.4" width="4.2" height="2.6" rx="0.7" />
     </Icon>
   )
 }
@@ -158,77 +162,91 @@ export function SoundwaveIcon({ size = 24 }) {
 export function TrumpetIcon({ size = 24 }) {
   return (
     <Icon size={size}>
-      <path d="M2 12h9" />
-      <path d="M11 8v8" />
-      <circle cx="13.5" cy="9" r="1.3" />
-      <circle cx="13.5" cy="15" r="1.3" />
-      <path d="M11 12h6" />
-      <path d="M17 9v6a3 3 0 0 0 5 2.2V9.8A3 3 0 0 0 17 9Z" />
+      <circle cx="2.8" cy="12" r="1.2" />
+      <line x1="4" y1="12" x2="6" y2="12" />
+      <rect x="6" y="9.5" width="10" height="5" rx="1.2" />
+      <path d="M16 9l5-3.2v12.4L16 15z" />
+      <line x1="8.7" y1="9.5" x2="8.7" y2="6.4" />
+      <line x1="11" y1="9.5" x2="11" y2="6.4" />
+      <line x1="13.3" y1="9.5" x2="13.3" y2="6.4" />
     </Icon>
   )
 }
 
+// The bell has to be a big open wedge -- an earlier version tapered it to a
+// small curl and the whole thing read as a candy cane.
 export function SaxophoneIcon({ size = 24 }) {
   return (
     <Icon size={size}>
-      <path d="M9 2h5l2 2" />
-      <path d="M11 4v9" />
-      <path d="M11 13a5 5 0 1 0 5 5" />
-      <circle cx="16" cy="18" r="1.6" />
-      <circle cx="9" cy="8" r="0.9" fill="currentColor" stroke="none" />
-      <circle cx="9" cy="11" r="0.9" fill="currentColor" stroke="none" />
+      <rect x="4.6" y="1.6" width="2.6" height="2.4" rx="0.8" />
+      <path d="M5.9 4v10.6c0 3.3 2.4 5.5 5.5 5.2 3-.3 4.6-2.6 4.6-5.6v-2" />
+      <path d="M16 12.2L10.9 5.9h10.2z" />
+      <circle cx="5.9" cy="7.3" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="5.9" cy="10.4" r="0.9" fill="currentColor" stroke="none" />
     </Icon>
   )
 }
 
+// Side-on cylinder with lugs. A head-on circle plus a cymbal-on-a-stand read
+// as a lollipop next to a clock; the hoop-and-shell silhouette is the thing
+// that actually says "drum".
 export function DrumKitIcon({ size = 24 }) {
   return (
     <Icon size={size}>
-      <ellipse cx="12" cy="15" rx="7" ry="3" />
-      <path d="M5 15v-3a7 3 0 0 1 14 0v3" />
-      <circle cx="19" cy="6" r="3" />
-      <path d="M6 6.5 3 5" />
-      <path d="M6.5 5v-2" />
+      <ellipse cx="12" cy="7.5" rx="8" ry="3" />
+      <path d="M4 7.5v8a8 3 0 0 0 16 0v-8" />
+      <line x1="12" y1="10.6" x2="12" y2="18.6" />
+      <line x1="6.6" y1="9.6" x2="6.6" y2="17.3" />
+      <line x1="17.4" y1="9.6" x2="17.4" y2="17.3" />
     </Icon>
   )
 }
 
+// Pinched waist + paired f-holes + a scroll instead of a headstock. Those are
+// the three things that separate it from GuitarIcon, which keeps a round body,
+// a round soundhole and frets. A bow laid across the body just read as a
+// strikethrough, so it's gone.
 export function ViolinIcon({ size = 24 }) {
   return (
     <Icon size={size}>
-      <path d="M11 2v6" />
-      <rect x="9.3" y="1.3" width="3.4" height="2" rx="0.6" fill="currentColor" stroke="none" />
-      <path d="M8 8c-1.5 1-2 2.4-1.2 3.8.8 1.3 2.4 1.2 2.9-.1.5 1.3 2.1 1.4 2.9.1.8-1.4.3-2.8-1.2-3.8Z" />
-      <path d="M9.5 11.5c-1 1.5-1 3 0 5.5s2.5 4 3.5 2.5" />
-      <circle cx="13.5" cy="19" r="1.4" />
+      <path d="M12 8.8c-2.6 0-4 1.5-4 3.1 0 1.1.9 1.6.9 2.4 0 1-1.4 1.4-1.4 2.9 0 2 2 3.4 4.5 3.4s4.5-1.4 4.5-3.4c0-1.5-1.4-1.9-1.4-2.9 0-.8.9-1.3.9-2.4 0-1.6-1.4-3.1-4-3.1z" />
+      <line x1="10.2" y1="13.6" x2="10.2" y2="17.2" />
+      <line x1="13.8" y1="13.6" x2="13.8" y2="17.2" />
+      <path d="M11 8.8V4.6" />
+      <path d="M13 8.8V4.6" />
+      <circle cx="12" cy="3.4" r="1.5" />
     </Icon>
   )
 }
 
+// Fat knobs over a short keyboard -- the previous tall-thin version read as a
+// comb, and needed more separation from PianoIcon anyway.
 export function SynthIcon({ size = 24 }) {
   return (
     <Icon size={size}>
-      <rect x="2" y="9" width="20" height="10" rx="2" />
-      <line x1="6" y1="9" x2="6" y2="19" />
-      <line x1="10" y1="9" x2="10" y2="19" />
-      <line x1="14" y1="9" x2="14" y2="19" />
-      <line x1="18" y1="9" x2="18" y2="19" />
-      <circle cx="7" cy="6" r="1.4" />
-      <circle cx="12" cy="5" r="1.4" />
-      <circle cx="17" cy="6" r="1.4" />
+      <rect x="2.5" y="12.5" width="19" height="7.5" rx="1.5" />
+      <line x1="7" y1="12.5" x2="7" y2="20" />
+      <line x1="11" y1="12.5" x2="11" y2="20" />
+      <line x1="15" y1="12.5" x2="15" y2="20" />
+      <line x1="19" y1="12.5" x2="19" y2="20" />
+      <circle cx="6.5" cy="7" r="2.2" />
+      <circle cx="12" cy="7" r="2.2" />
+      <circle cx="17.5" cy="7" r="2.2" />
     </Icon>
   )
 }
 
+// Frame + drum head + jingles seated in the rim. The head is what makes this
+// a tambourine rather than a circle with dots on it.
 export function TambourineIcon({ size = 24 }) {
   return (
     <Icon size={size}>
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="4.5" r="1.1" fill="currentColor" stroke="none" />
-      <circle cx="19.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="19.5" r="1.1" fill="currentColor" stroke="none" />
-      <circle cx="4.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="5.5" />
+      <ellipse cx="12" cy="3.5" rx="1.6" ry="1" />
+      <ellipse cx="20.5" cy="12" rx="1" ry="1.6" />
+      <ellipse cx="12" cy="20.5" rx="1.6" ry="1" />
+      <ellipse cx="3.5" cy="12" rx="1" ry="1.6" />
     </Icon>
   )
 }
