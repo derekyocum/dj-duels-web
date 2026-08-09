@@ -8,6 +8,7 @@ import Lounge from './pages/Lounge'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Privacy from './pages/Privacy'
+import Support from './pages/Support'
 import Lobby from './pages/Lobby'
 import Faceoff from './pages/Faceoff'
 import Stage from './pages/Stage'
@@ -27,6 +28,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/support" element={<Support />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* All in-duel pages share ONE socket via DuelLayout — see DuelLayout.jsx */}
           <Route element={<DuelLayout />}>

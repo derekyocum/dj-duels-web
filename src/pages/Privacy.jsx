@@ -1,9 +1,9 @@
 import AppBackground from '../components/AppBackground'
 import Logo from '../components/Logo'
 import Footer from '../components/Footer'
+import { SUPPORT_EMAIL as CONTACT_EMAIL } from '../utils/contact'
 
 const EFFECTIVE_DATE = 'July 27, 2026'
-const CONTACT_EMAIL = 'support.djduels@gmail.com'
 
 function Section({ title, children }) {
   return (
