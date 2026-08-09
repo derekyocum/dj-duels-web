@@ -44,7 +44,7 @@ function Login() {
         <a href="/" className="flex items-center justify-center gap-2 no-underline mb-10">
           <Logo className="w-7 h-7" />
           <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-neon-blue">Duels</span>
+            DJ <span className="text-midnight-blue">Duels</span>
           </span>
         </a>
 
