@@ -29,11 +29,8 @@ function Support() {
       <AppBackground />
 
       <nav className="relative z-10 flex items-center px-6 py-5 md:px-12">
-        <a href="/" className="flex items-center gap-2 no-underline">
-          <Logo className="w-7 h-7" />
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-midnight-blue">Duels</span>
-          </span>
+        <a href="/" className="flex items-center no-underline">
+          <Logo className="w-10 h-10" />
         </a>
       </nav>
 

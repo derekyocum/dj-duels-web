@@ -36,11 +36,6 @@
   --color-ember: #ff9d5c;
   --color-ember-deep: #4a2417;
 
-  /* Wordmark only: "Duels" reads darker and more subdued than the neon-blue
-     used elsewhere, evoking a night sky rather than a light source. Has to
-     stay well above pure black or it disappears into the near-black canvas. */
-  --color-midnight-blue: #2b3fa3;
-
   --color-text-primary: #f4f2f9;
   --color-text-secondary: #9b95a8;
   --color-text-muted: #6b6375;

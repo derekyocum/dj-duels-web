@@ -55,11 +55,8 @@ function ForgotPassword() {
       <AppBackground />
 
       <div className="relative z-10 w-full max-w-sm">
-        <a href="/" className="flex items-center justify-center gap-2 no-underline mb-10">
-          <Logo className="w-7 h-7" />
-          <span className="text-xl font-bold tracking-tight text-text-primary">
-            DJ <span className="text-midnight-blue">Duels</span>
-          </span>
+        <a href="/" className="flex items-center justify-center no-underline mb-10">
+          <Logo className="w-14 h-14" />
         </a>
 
         {step === 'request' ? (
