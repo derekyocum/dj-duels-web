@@ -28,7 +28,7 @@ async function loadFriendsData() {
  * row AND adds a friend) and a refetch can't drift from the server.
  */
 function Friends() {
-  const [friends, setFriends] = useState({ friends: [], incoming: [], outgoing: [] })
+  const [friends, setFriends] = useState({ friends: [], incoming: [], outgoing: [], blocked: [] })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -69,6 +69,7 @@ function Friends() {
             friends={friends.friends}
             incoming={friends.incoming}
             outgoing={friends.outgoing}
+            blocked={friends.blocked}
             loading={loading}
             onChanged={refresh}
           />

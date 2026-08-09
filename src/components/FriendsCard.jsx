@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { sendFriendRequest, acceptFriendRequest, removeFriend } from '../utils/api'
+import { sendFriendRequest, acceptFriendRequest, removeFriend, unblockUser } from '../utils/api'
 import { useAvatars } from '../utils/useAvatars'
 import Avatar from './Avatar'
+import UserActions from './UserActions'
 
 function Row({ username, avatar, children }) {
   return (
@@ -24,7 +25,7 @@ function Row({ username, avatar, children }) {
  * adds a friend), so a refetch is both simpler and can't drift from what the
  * server actually thinks.
  */
-function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onChanged }) {
+function FriendsCard({ friends = [], incoming = [], outgoing = [], blocked = [], loading, onChanged }) {
   const [username, setUsername] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -34,6 +35,7 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
     ...friends.map((f) => f.username),
     ...incoming.map((f) => f.username),
     ...outgoing.map((f) => f.username),
+    ...blocked.map((f) => f.username),
   ])
 
   // Shared wrapper so every action gets the same busy-lock, error surfacing and
@@ -111,6 +113,10 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
               >
                 Decline
               </button>
+              {/* An unwanted request from a stranger is the main way someone
+                  reaches you here, so block/report has to be on this row and
+                  not only on people you already accepted. */}
+              <UserActions username={f.username} context="friend request" onChanged={onChanged} />
             </Row>
           ))}
         </div>
@@ -133,6 +139,7 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
               >
                 Remove
               </button>
+              <UserActions username={f.username} context="friends list" onChanged={onChanged} />
             </Row>
           ))
         )}
@@ -152,6 +159,27 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], loading, onCh
                 className="px-3 py-1.5 text-xs font-medium rounded-full bg-text-muted/15 text-text-muted hover:bg-text-muted/25 transition-colors cursor-pointer disabled:opacity-40"
               >
                 Cancel
+              </button>
+            </Row>
+          ))}
+        </div>
+      )}
+
+      {/* Somewhere to undo a block. Without this a block is a one-way door,
+          which is its own kind of bad -- people do block in anger. */}
+      {blocked.length > 0 && (
+        <div className="border-t border-text-muted/10">
+          <p className="px-6 pt-4 pb-1 text-text-muted text-[10px] uppercase tracking-widest font-semibold">
+            Blocked
+          </p>
+          {blocked.map((f) => (
+            <Row key={f.username} username={f.username} avatar={avatars[f.username]}>
+              <button
+                onClick={() => run(() => unblockUser(f.username), `${f.username} unblocked`)}
+                disabled={busy}
+                className="px-3 py-1.5 text-xs font-medium rounded-full bg-text-muted/15 text-text-muted hover:bg-text-muted/25 transition-colors cursor-pointer disabled:opacity-40"
+              >
+                Unblock
               </button>
             </Row>
           ))}

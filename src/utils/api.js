@@ -224,6 +224,41 @@ export async function removeFriend(username) {
   return data
 }
 
+// Blocking ends any friendship or pending request in the same server-side
+// write, so callers don't need to unfriend first.
+export async function blockUser(username) {
+  const response = await fetch(`${API_BASE}/api/friends/${encodeURIComponent(username)}/block`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to block')
+  return data
+}
+
+export async function unblockUser(username) {
+  const response = await fetch(`${API_BASE}/api/friends/${encodeURIComponent(username)}/block`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to unblock')
+  return data
+}
+
+/** Reports a user. `reason` must be one of the server's whitelist -- see
+ *  ReportController.VALID_REASONS. Returns 202: accepted for review. */
+export async function reportUser({ username, reason, detail = '', context = '' }) {
+  const response = await fetch(`${API_BASE}/api/reports`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reportedUsername: username, reason, detail, context }),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to send report')
+  return data
+}
+
 export async function fetchMyStats() {
   const response = await fetch(`${API_BASE}/api/stats/me`, {
     headers: authHeaders(),
