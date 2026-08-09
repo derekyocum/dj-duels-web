@@ -25,7 +25,7 @@ function AppNav({ right }) {
             </Link>
             <Link
               to="/signup"
-              className="px-5 py-2 text-sm font-semibold rounded-full border border-neon-purple/40 text-neon-purple hover:bg-neon-purple/10 hover:border-neon-purple/60 transition-colors"
+              className="px-5 py-2 text-sm font-semibold rounded-full text-neon-purple hover:bg-neon-purple/10 transition-colors"
             >
               Sign Up
             </Link>
