@@ -1,13 +1,14 @@
 import { useEffect, useState, useRef } from 'react'
 import {
-  ensureSpotifyPlaybackInitialized,
-  getSpotifyPlaybackStatus,
-  subscribeSpotifyPlaybackStatus,
-  playSpotifyTrack,
-  pauseSpotifyPlayback,
-  reconcileSpotifyPlayback,
-} from '../utils/spotifyWebPlayback'
-import { fetchSpotifyLikedStatus, likeSpotifyTrack, unlikeSpotifyTrack, getPlatformAuthorizeUrl } from '../utils/api'
+  ensureAppleMusicInitialized,
+  getAppleMusicStatus,
+  subscribeAppleMusicStatus,
+  playAppleMusicTrack,
+  pauseAppleMusicPlayback,
+  reconcileAppleMusicPlayback,
+  authorizeAppleMusic,
+} from '../utils/appleMusicPlayback'
+import { addToAppleMusicLibrary } from '../utils/api'
 import LoungeAvatar from './LoungeAvatar'
 
 // Filled vs. outline heart -- drawn rather than an icon-library import, same
@@ -33,17 +34,17 @@ function formatTime(ms) {
  * rather than restarting it. Nothing here tells the server what time it is —
  * the server is always the source of truth.
  *
- * Spotify degrades honestly. Full tracks need the listener's OWN Premium
+ * Apple Music degrades honestly. Full tracks need the listener's OWN subscription
  * account connected with the streaming scope, which not everyone will have.
  * The room's timeline stays in sync regardless: a listener without it still
  * sees the art, the title and the progress bar moving with everyone else, and
  * gets told why they can't hear it — rather than the room silently desyncing.
  */
 function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesRequired, onSkipVote, avatars = {} }) {
-  const [spotifyStatus, setSpotifyStatus] = useState(getSpotifyPlaybackStatus())
+  const [appleMusicStatus, setAppleMusicStatus] = useState(getAppleMusicStatus())
   const [voted, setVoted] = useState(false)
-  // 'ok' | 'corrected' | 'paused' | 'elsewhere' | 'idle' -- see
-  // reconcileSpotifyPlayback. Only the last two are worth telling the user about.
+  // 'ok' | 'corrected' | 'paused' | 'idle' -- see
+  // reconcileAppleMusicPlayback. Only the last two are worth telling the user about.
   const [syncState, setSyncState] = useState('ok')
   // The YouTube embed's ?start=, frozen per track. Deriving it from the ticking
   // clock changed the src string every second, so React kept mutating the live
@@ -63,20 +64,20 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
   const startedTrackRef = useRef(null)
   // Saving to Liked Songs is a plain REST call the server makes with the
   // caller's own token -- unlike playback, it works identically regardless of
-  // Premium/SDK status, so this is independent of spotifyStatus above.
+  // Premium/SDK status, so this is independent of appleMusicStatus above.
   // `available` only turns true once a real liked-status check has succeeded;
-  // there's already a "connect Spotify" nudge for playback, so a second one
+  // there's already a "connect Apple Music" nudge for playback, so a second one
   // here (not-connected / needs-reconnect) would just be noise -- the heart
   // simply doesn't render for anyone that check fails for.
-  const [likeState, setLikeState] = useState({ trackId: null, liked: null, available: false })
-  // Lounges are open to everyone regardless of Spotify status -- this just
-  // tracks the in-flight "Connect Spotify" button next to the not-playable
+  const [addState, setAddState] = useState({ trackId: null, pending: false })
+  // Lounges are open to everyone regardless of Apple Music status -- this just
+  // tracks the in-flight "Connect Apple Music" button next to the not-playable
   // notice below, same full-navigation flow Profile's own connect uses.
-  const [connectingSpotify, setConnectingSpotify] = useState(false)
+  const [connecting, setConnecting] = useState(false)
 
   useEffect(() => {
-    ensureSpotifyPlaybackInitialized()
-    return subscribeSpotifyPlaybackStatus(setSpotifyStatus)
+    ensureAppleMusicInitialized()
+    return subscribeAppleMusicStatus(setAppleMusicStatus)
   }, [])
 
   // Local ticker purely for the progress bar; the authoritative timeline is
@@ -109,69 +110,65 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
     setYoutubeStart({ id: current.id, sec: Math.floor(positionMs / 1000) })
   }
 
-  // Start Spotify playback, seeking to wherever the room already is.
+  // Start Apple Music playback, seeking to wherever the room already is.
   useEffect(() => {
-    if (source !== 'spotify' || spotifyStatus !== 'ready' || !track?.id) return
+    if (source !== 'applemusic' || appleMusicStatus !== 'ready' || !track?.id) return
     if (startedTrackRef.current === current.id) return
     startedTrackRef.current = current.id
-    playSpotifyTrack(track.id, Math.max(0, (Date.now() + clockOffset) - startedAt))
+    playAppleMusicTrack(track.id, Math.max(0, (Date.now() + clockOffset) - startedAt))
     // clockOffset/startedAt are read at start time only -- re-seeking on every
     // tick would fight the player instead of letting it run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, spotifyStatus, track?.id, current?.id])
+  }, [source, appleMusicStatus, track?.id, current?.id])
 
   // Keep this listener on the room's timeline. Playback is started once per
   // track and then left alone, so without this nothing notices a buffer
-  // leaving someone seconds behind, a pause from the Spotify phone app, or
+  // leaving someone seconds behind, a pause from another tab, or
   // another device quietly stealing playback.
   useEffect(() => {
-    if (source !== 'spotify' || spotifyStatus !== 'ready' || !track?.id || !startedAt) return
+    if (source !== 'applemusic' || appleMusicStatus !== 'ready' || !track?.id || !startedAt) return
     const id = setInterval(async () => {
-      setSyncState(await reconcileSpotifyPlayback({
+      setSyncState(await reconcileAppleMusicPlayback({
         trackId: track.id,
         expectedPositionMs: (Date.now() + clockOffset) - startedAt,
         durationMs,
       }))
     }, 5000)
     return () => clearInterval(id)
-  }, [source, spotifyStatus, track?.id, startedAt, clockOffset, durationMs])
+  }, [source, appleMusicStatus, track?.id, startedAt, clockOffset, durationMs])
 
-  // Check liked status once per Spotify track. YouTube tracks have no Spotify
-  // library concept, so this only fires for source === 'spotify'.
-  useEffect(() => {
-    if (source !== 'spotify' || !track?.id) return
-    let cancelled = false
-    fetchSpotifyLikedStatus(track.id)
-      .then((data) => { if (!cancelled) setLikeState({ trackId: track.id, liked: data.liked, available: true }) })
-      .catch(() => { if (!cancelled) setLikeState({ trackId: track.id, liked: null, available: false }) })
-    return () => { cancelled = true }
-  }, [source, track?.id])
-
-  // Optimistic toggle with a revert on failure -- saving a track is quick
-  // enough that waiting on the round trip before reflecting it would just
-  // make the heart feel laggy for no real benefit.
-  const toggleLike = async () => {
-    if (!likeState.available || likeState.liked === null || likeState.trackId !== track.id) return
-    const next = !likeState.liked
-    setLikeState((s) => ({ ...s, liked: next }))
+  /**
+   * One-way, because Apple's API is one-way: there is no supported endpoint to
+   * remove a song from a library and no reliable way to ask whether one is
+   * already there. So this cannot be the fill/unfill heart the old Spotify version
+   * had -- an un-toggle would appear to work while doing nothing to the user's
+   * actual library, which is worse than not offering it.
+   *
+   * `added` is therefore local session state, not fetched truth: it reflects
+   * "you tapped this here", not "this is in your library".
+   */
+  const addToLibrary = async () => {
+    if (!track?.id || addState.trackId === track.id) return
+    setAddState({ trackId: track.id, pending: true })
     try {
-      await (next ? likeSpotifyTrack(track.id) : unlikeSpotifyTrack(track.id))
+      await addToAppleMusicLibrary(track.id)
+      setAddState({ trackId: track.id, pending: false })
     } catch {
-      setLikeState((s) => (s.trackId === track.id ? { ...s, liked: !next } : s))
+      setAddState({ trackId: null, pending: false })
     }
   }
 
   // The SDK player is a persistent singleton -- it does NOT stop on its own
-  // when the room moves off Spotify entirely. A Spotify->Spotify skip doesn't
+  // when the room moves off Apple Music entirely. An Apple->Apple skip doesn't
   // need an explicit pause here: the "start playback" effect above calls
-  // playSpotifyTrack() for the new track, and the SDK's play() call already
+  // playAppleMusicTrack() for the new track, and the SDK's play() call already
   // replaces whatever was playing. But going to YouTube (or to nothing) has no
-  // such call to hand off to, so without this the old Spotify audio just kept
+  // such call to hand off to, so without this the old Apple Music audio just kept
   // playing underneath the new YouTube embed -- both audible at once.
   useEffect(() => {
-    if (!current || source !== 'spotify') pauseSpotifyPlayback()
+    if (!current || source !== 'applemusic') pauseAppleMusicPlayback()
   }, [current, source])
-  useEffect(() => () => pauseSpotifyPlayback(), [])
+  useEffect(() => () => pauseAppleMusicPlayback(), [])
 
   if (!current) {
     return (
@@ -184,29 +181,37 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
   }
 
   const progress = durationMs > 0 ? Math.min(100, (positionMs / durationMs) * 100) : 0
-  const isSpotify = source === 'spotify'
-  const spotifyPlayable = isSpotify && spotifyStatus === 'ready'
-  // Someone whose audio has drifted off the room, or been taken over by
-  // another device -- worth telling them, since everyone else plays on.
-  const outOfSync = spotifyPlayable && (syncState === 'elsewhere' || syncState === 'paused')
+  const isAppleMusic = source === 'applemusic'
+  const appleMusicPlayable = isAppleMusic && appleMusicStatus === 'ready'
+  // Someone whose audio has drifted off the room -- worth telling them,
+  // since everyone else plays on. No 'elsewhere' case: MusicKit plays in
+  // this page, so nothing can take playback away the way another Spotify
+  // device could.
+  const outOfSync = appleMusicPlayable && (syncState === 'paused')
 
   // Pulls playback back to this device at the room's current position.
   const rejoinRoom = () => {
-    playSpotifyTrack(track.id, Math.max(0, (Date.now() + clockOffset) - startedAt))
+    playAppleMusicTrack(track.id, Math.max(0, (Date.now() + clockOffset) - startedAt))
     setSyncState('ok')
   }
 
-  // Same full-navigation OAuth handoff Profile.jsx's connect button uses --
-  // lands back on /profile?connected=spotify, so re-opening this lounge link
-  // afterward is what picks the room's sync back up (playback init below
-  // reruns on that next mount and reports 'ready' once actually connected).
-  const connectSpotify = async () => {
-    setConnectingSpotify(true)
+  /**
+   * Connecting Apple Music never leaves the page.
+   *
+   * The Spotify version had to do a full-navigation OAuth handoff and land the
+   * user back on /profile, which meant re-opening the lounge link afterwards
+   * just to rejoin the room. MusicKit prompts in place, so someone can connect
+   * mid-song and start hearing the room without losing their seat in it.
+   */
+  const connectAppleMusic = async () => {
+    setConnecting(true)
     try {
-      const url = await getPlatformAuthorizeUrl('spotify')
-      window.location.href = url
+      await authorizeAppleMusic()
+      // Playback picks up on the next effect run now that we're authorized.
     } catch {
-      setConnectingSpotify(false)
+      // Declining the prompt is a normal choice, not an error to shout about.
+    } finally {
+      setConnecting(false)
     }
   }
 
@@ -238,18 +243,22 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
             <p className="text-text-primary font-semibold truncate">{track?.name}</p>
             <p className="text-text-secondary text-sm truncate">{track?.artist}</p>
           </div>
-          {isSpotify && likeState.available && likeState.trackId === track?.id && (
+          {/* Add-only, and the control says so. Once added it goes disabled
+              rather than becoming an un-add, because Apple offers no removal --
+              a button that looked like it could undo would be lying. */}
+          {isAppleMusic && track?.id && (
             <button
-              onClick={toggleLike}
-              aria-label={likeState.liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
-              title={likeState.liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
-              className={`shrink-0 p-2 rounded-full border transition-colors cursor-pointer ${
-                likeState.liked
-                  ? 'text-ember border-ember/30 bg-ember/15 hover:bg-ember/25'
-                  : 'text-text-muted border-text-muted/25 hover:text-ember hover:border-ember/40'
-              }`}
+              onClick={addToLibrary}
+              disabled={addState.pending || addState.trackId === track.id}
+              aria-label={addState.trackId === track.id ? 'Added to your Apple Music library' : 'Add to your Apple Music library'}
+              title={addState.trackId === track.id ? 'Added to your Apple Music library' : 'Add to your Apple Music library'}
+              className={`shrink-0 p-2 rounded-full border transition-colors ${
+                addState.trackId === track.id
+                  ? 'text-ember border-ember/30 bg-ember/15 cursor-default'
+                  : 'text-text-muted border-text-muted/25 hover:text-ember hover:border-ember/40 cursor-pointer'
+              } ${addState.pending ? 'opacity-50' : ''}`}
             >
-              <HeartIcon filled={likeState.liked} />
+              <HeartIcon filled={addState.trackId === track.id} />
             </button>
           )}
         </div>
@@ -263,18 +272,18 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
           </span>
         </div>
 
-        {isSpotify && !spotifyPlayable && (
+        {isAppleMusic && !appleMusicPlayable && (
           <div className="mt-4 flex items-center gap-3 text-xs bg-card/60 border border-text-muted/15 rounded-xl px-4 py-3">
             <span className="text-lg shrink-0">🎧</span>
             <span className="flex-1 text-text-muted">
-              Connect your Spotify account to listen along in sync — the room keeps playing either way.
+              Connect Apple Music to listen along in sync — the room keeps playing either way.
             </span>
             <button
-              onClick={connectSpotify}
-              disabled={connectingSpotify}
+              onClick={connectAppleMusic}
+              disabled={connecting}
               className="shrink-0 px-3 py-1.5 font-semibold rounded-full bg-ember/20 text-ember border border-ember/30 hover:bg-ember/30 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {connectingSpotify ? 'Redirecting…' : 'Connect Spotify'}
+              {connecting ? 'Connecting…' : 'Connect Apple Music'}
             </button>
           </div>
         )}
@@ -282,9 +291,7 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
         {outOfSync && (
           <div className="mt-4 flex items-center gap-3 text-xs bg-ember/10 border border-ember/25 rounded-xl px-4 py-3">
             <span className="flex-1 text-text-secondary">
-              {syncState === 'elsewhere'
-                ? 'Spotify is playing somewhere else — another device took over.'
-                : 'Your playback is paused. The room kept going.'}
+              {'Your audio is paused — the room is still playing.'}
             </span>
             <button
               onClick={rejoinRoom}
