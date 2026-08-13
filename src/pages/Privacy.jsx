@@ -53,7 +53,7 @@ function Privacy() {
               leaderboard.
             </p>
             <p><span className="text-text-primary font-semibold">Connected music accounts (optional).</span> If you choose
-              to connect a Spotify or YouTube account, we store an encrypted access/refresh token for that connection
+              to connect an Apple Music or YouTube account, we store an encrypted access token for that connection
               (encrypted at rest using AWS KMS) along with your display name on that platform, so we can show it&apos;s
               connected. Searching for songs to play in a duel does not use your connected account or personal listening
               data -- search uses DJ Duels&apos; own app-level API access, not yours. You can disconnect a platform at any
@@ -74,13 +74,13 @@ function Privacy() {
 
           <Section title="How we use your information">
             <p>To create and secure your account, run duels and matchmaking, keep your stats and the leaderboard accurate,
-              let you connect a Spotify/YouTube account if you choose to, and protect the service against abuse.</p>
+              let you connect an Apple Music/YouTube account if you choose to, and protect the service against abuse.</p>
           </Section>
 
           <Section title="How we share your information">
             <p>We don&apos;t sell your information. It&apos;s shared only where necessary to run the service: with our
               infrastructure providers (Amazon Web Services, which hosts our servers and databases, and Amazon Cognito,
-              which handles authentication) and, if you choose to connect an account, with Spotify or Google/YouTube as
+              which handles authentication) and, if you choose to connect an account, with Apple or Google/YouTube as
               part of that connection&apos;s standard OAuth flow.
             </p>
           </Section>
@@ -89,7 +89,7 @@ function Privacy() {
             <p>
               We keep your account data for as long as your account is active. You can permanently delete your account
               at any time from your Profile (web and mobile) -- this removes your Cognito account, your stats, and any
-              connected Spotify/YouTube tokens. This action is immediate and cannot be undone.
+              connected Apple Music/YouTube tokens. This action is immediate and cannot be undone.
             </p>
           </Section>
 

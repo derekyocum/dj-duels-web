@@ -1,17 +1,17 @@
 import { useState } from 'react'
 
 // Answers to the questions people actually hit, phrased honestly -- the
-// Spotify Premium and mobile-playback limits are real and it's better to say
+// Subscription and mobile-playback limits are real and it's better to say
 // so here than to have someone discover them mid-duel. See NowPlaying and
 // spotifyWebPlayback for where each limit actually comes from.
 const FAQ = [
   {
-    q: 'Do I need Spotify Premium?',
-    a: 'No. You can play, vote, and win with no account connected at all. Connecting Spotify Premium is what unlocks full-length tracks instead of 30-second previews — without it you still see the artwork, the timer, and everyone else\'s votes in sync.',
+    q: 'Do I need an Apple Music subscription?',
+    a: 'No. You can play, vote, and win with no account connected at all. Connecting Apple Music is what unlocks full-length tracks instead of 30-second previews — without it you still see the artwork, the timer, and everyone else\'s votes in sync.',
   },
   {
     q: 'Does it work with YouTube?',
-    a: 'Yes, and YouTube tracks play in full for everyone with no account needed. You can mix Spotify and YouTube picks in the same duel.',
+    a: 'Yes, and YouTube tracks play in full for everyone with no account needed. You can mix Apple Music and YouTube picks in the same duel.',
   },
   {
     q: 'Is it free?',

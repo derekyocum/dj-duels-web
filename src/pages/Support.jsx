@@ -83,15 +83,15 @@ function Support() {
               You can delete your account yourself, without contacting us: open <span className="text-text-primary font-semibold">Profile</span>{' '}
               and choose <span className="text-text-primary font-semibold">Delete Account</span>. It&apos;s in the same place on the
               website and in the mobile app. This immediately and permanently removes your account,
-              your stats, and any connected Spotify or YouTube accounts, and it cannot be undone.
+              your stats, and any connected Apple Music or YouTube accounts, and it cannot be undone.
             </p>
           </Section>
 
           <Section title="Common questions">
             <p>
-              <span className="text-text-primary font-semibold">Why do Spotify songs only play for 30 seconds?</span>{' '}
-              That&apos;s Spotify&apos;s preview clip, which is what plays when you don&apos;t have a
-              Spotify Premium account connected. Connect Spotify Premium from your Profile for
+              <span className="text-text-primary font-semibold">Why do Apple Music songs only play for 30 seconds?</span>{' '}
+              That&apos;s Apple&apos;s preview clip, which is what plays when you don&apos;t have an
+              Apple Music subscription connected. Connect Apple Music from your Profile for
               full-length tracks. YouTube tracks play in full for everyone, with no account needed.
             </p>
             <p>

@@ -99,9 +99,9 @@ function Terms() {
 
           <Section title="Music and content">
             <p>
-              DJ Duels does not host, store, or stream any audio. Songs play through Spotify&apos;s and
+              DJ Duels does not host, store, or stream any audio. Songs play through Apple Music&apos;s and
               YouTube&apos;s own official embedded players, and your use of those players is also
-              subject to Spotify&apos;s and Google&apos;s terms. Music, artwork, and metadata belong to
+              subject to Apple&apos;s and Google&apos;s terms. Music, artwork, and metadata belong to
               their respective rights holders.
             </p>
             <p>
@@ -122,7 +122,7 @@ function Terms() {
           <Section title="Ending your account">
             <p>
               You can delete your account at any time from your Profile, on the web or in the mobile
-              app. That permanently removes your account, your stats, and any connected Spotify or
+              app. That permanently removes your account, your stats, and any connected Apple Music or
               YouTube accounts, and it can&apos;t be undone. We may suspend or end an account that
               breaks these terms.
             </p>
