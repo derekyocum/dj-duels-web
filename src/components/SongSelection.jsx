@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import CountdownTimer from './CountdownTimer'
 import SearchResultRow from './SearchResultRow'
 import { detectPlatform, PLATFORM_ICON } from '../utils/trackPlatforms'
-import { fetchSpotifyTrack, fetchYouTubeTrack, searchSpotifyTracks, searchYouTubeVideos } from '../utils/api'
+import { fetchAppleMusicTrack, fetchYouTubeTrack, searchAppleMusicTracks, searchYouTubeVideos } from '../utils/api'
 
 function TrackPreview({ trackInfo }) {
   const previewIcon = PLATFORM_ICON[trackInfo.source]
@@ -14,7 +14,7 @@ function TrackPreview({ trackInfo }) {
       <div className="flex-1 min-w-0">
         <p className="text-text-primary font-semibold text-sm truncate">{trackInfo.name}</p>
         <p className="text-text-secondary text-xs truncate">{trackInfo.artist}</p>
-        {trackInfo.source === 'spotify' && <p className="text-text-muted text-xs truncate">{trackInfo.album}</p>}
+        {trackInfo.source === 'applemusic' && <p className="text-text-muted text-xs truncate">{trackInfo.album}</p>}
       </div>
       {previewIcon && <previewIcon.Icon className="w-5 h-5 shrink-0" style={{ color: previewIcon.color }} />}
     </div>
@@ -32,7 +32,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
   const pasteDebounceRef = useRef(null)
 
   // Search mode state
-  const [searchPlatform, setSearchPlatform] = useState('spotify')
+  const [searchPlatform, setSearchPlatform] = useState('applemusic')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -55,7 +55,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
       setPasteLoading(true)
       setError(null)
       try {
-        const data = platform === 'spotify' ? await fetchSpotifyTrack(trimmed) : await fetchYouTubeTrack(trimmed)
+        const data = platform === 'applemusic' ? await fetchAppleMusicTrack(trimmed) : await fetchYouTubeTrack(trimmed)
         setTrackInfo(data)
       } catch (e) {
         setError(e.message)
@@ -81,7 +81,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
       setSearchLoading(true)
       setError(null)
       try {
-        const data = searchPlatform === 'spotify' ? await searchSpotifyTracks(trimmed) : await searchYouTubeVideos(trimmed)
+        const data = searchPlatform === 'applemusic' ? await searchAppleMusicTracks(trimmed) : await searchYouTubeVideos(trimmed)
         setResults(data)
       } catch (e) {
         setError(e.message)
@@ -100,7 +100,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
     if (query.trim()) {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
       setSearchLoading(true)
-      const fn = platform === 'spotify' ? searchSpotifyTracks : searchYouTubeVideos
+      const fn = platform === 'applemusic' ? searchAppleMusicTracks : searchYouTubeVideos
       fn(query.trim())
         .then(setResults)
         .catch((e) => setError(e.message))
@@ -136,7 +136,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
         You're up against <span className="text-text-primary font-semibold">{opponent.name}</span>
       </p>
 
-      {/* The genre rule can't be enforced in code (Spotify only exposes genre on
+      {/* The genre rule can't be enforced in code (Apple Music only exposes genre on
           the artist, YouTube not at all), so it's surfaced here -- at the moment
           of choosing -- and left to the room to police with its votes. */}
       {genre && genre !== 'Any genre' && (
@@ -173,7 +173,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
         <>
           {/* Platform toggle */}
           <div className="w-full flex gap-2 mb-3">
-            {['spotify', 'youtube'].map((p) => {
+            {['applemusic', 'youtube'].map((p) => {
               const { Icon, color } = PLATFORM_ICON[p]
               const active = searchPlatform === p
               return (
@@ -185,7 +185,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" style={{ color }} />
-                  <span className={active ? 'text-text-primary' : 'text-text-muted'}>{p === 'spotify' ? 'Spotify' : 'YouTube'}</span>
+                  <span className={active ? 'text-text-primary' : 'text-text-muted'}>{p === 'applemusic' ? 'Apple Music' : 'YouTube'}</span>
                 </button>
               )
             })}
@@ -195,7 +195,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
             type="text"
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
-            placeholder={`Search ${searchPlatform === 'spotify' ? 'Spotify' : 'YouTube'} for a song...`}
+            placeholder={`Search ${searchPlatform === 'applemusic' ? 'Apple Music' : 'YouTube'} for a song...`}
             className="w-full bg-card/60 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors mb-3"
           />
 
@@ -236,7 +236,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
             type="url"
             value={songLink}
             onChange={(e) => handleLinkChange(e.target.value)}
-            placeholder="Paste a Spotify or YouTube link"
+            placeholder="Paste an Apple Music or YouTube link"
             className="w-full bg-card/60 border border-text-muted/20 text-text-primary rounded-xl px-4 py-3 text-sm placeholder:text-text-muted/50 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-colors"
           />
           {pasteLoading && (

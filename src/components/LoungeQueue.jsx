@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import SearchResultRow from './SearchResultRow'
 import LoungeAvatar from './LoungeAvatar'
 import { detectPlatform, PLATFORM_ICON } from '../utils/trackPlatforms'
-import { fetchSpotifyTrack, fetchYouTubeTrack, searchSpotifyTracks, searchYouTubeVideos } from '../utils/api'
+import { fetchAppleMusicTrack, fetchYouTubeTrack, searchAppleMusicTracks, searchYouTubeVideos } from '../utils/api'
 
 /**
  * The shared queue plus the "add something" flow. Reuses the same
@@ -13,7 +13,7 @@ import { fetchSpotifyTrack, fetchYouTubeTrack, searchSpotifyTracks, searchYouTub
 function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState('search') // 'search' | 'paste'
-  const [platform, setPlatform] = useState('spotify')
+  const [platform, setPlatform] = useState('applemusic')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
@@ -33,7 +33,7 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
       setSearching(true)
       setError(null)
       try {
-        const fn = which === 'spotify' ? searchSpotifyTracks : searchYouTubeVideos
+        const fn = which === 'applemusic' ? searchAppleMusicTracks : searchYouTubeVideos
         setResults(await fn(trimmed))
       } catch (e) {
         setError(e.message)
@@ -66,7 +66,7 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
     pasteDebounce.current = setTimeout(async () => {
       setError(null)
       try {
-        const track = detected === 'spotify' ? await fetchSpotifyTrack(trimmed) : await fetchYouTubeTrack(trimmed)
+        const track = detected === 'applemusic' ? await fetchAppleMusicTrack(trimmed) : await fetchYouTubeTrack(trimmed)
         add(track)
         setLink('')
       } catch (e) {
@@ -115,7 +115,7 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
           {mode === 'search' ? (
             <>
               <div className="flex gap-2 mb-3">
-                {['spotify', 'youtube'].map((p) => {
+                {['applemusic', 'youtube'].map((p) => {
                   const { Icon, color } = PLATFORM_ICON[p]
                   const active = platform === p
                   return (
@@ -127,7 +127,7 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" style={{ color }} />
-                      {p === 'spotify' ? 'Spotify' : 'YouTube'}
+                      {p === 'applemusic' ? 'Apple Music' : 'YouTube'}
                     </button>
                   )
                 })}
@@ -135,7 +135,7 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
               <input
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
-                placeholder={`Search ${platform === 'spotify' ? 'Spotify' : 'YouTube'}…`}
+                placeholder={`Search ${platform === 'applemusic' ? 'Apple Music' : 'YouTube'}…`}
                 autoCapitalize="none"
                 autoCorrect="off"
                 className="w-full bg-card border border-text-muted/20 text-text-primary rounded-xl px-4 py-2.5 text-sm placeholder:text-text-muted focus:outline-none focus:border-ember/50 transition-colors"
@@ -153,7 +153,7 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
             <input
               value={link}
               onChange={(e) => handleLinkChange(e.target.value)}
-              placeholder="Paste a Spotify or YouTube link"
+              placeholder="Paste an Apple Music or YouTube link"
               autoCapitalize="none"
               autoCorrect="off"
               className="w-full bg-card border border-text-muted/20 text-text-primary rounded-xl px-4 py-2.5 text-sm placeholder:text-text-muted focus:outline-none focus:border-ember/50 transition-colors"
