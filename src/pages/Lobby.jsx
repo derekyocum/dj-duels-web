@@ -289,7 +289,7 @@ function Lobby() {
         </div>
 
         <p className="text-text-muted text-xs mb-10 text-center">
-          Connect Spotify or YouTube in your{' '}
+          Connect Apple Music or YouTube in your{' '}
           <Link to="/profile" className="text-neon-blue hover:text-neon-blue/80 transition-colors">
             Profile
           </Link>

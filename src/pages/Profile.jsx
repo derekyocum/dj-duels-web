@@ -8,9 +8,10 @@ import Avatar from '../components/Avatar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform, fetchMyStats, fetchFriends } from '../utils/api'
+import { ensureAppleMusicInitialized, authorizeAppleMusic } from '../utils/appleMusicPlayback'
 
-const PLATFORM_NAMES = { spotify: 'Spotify', youtube: 'YouTube' }
-const DEFAULT_STATUS = [{ platform: 'spotify', connected: false }, { platform: 'youtube', connected: false }]
+const PLATFORM_NAMES = { applemusic: 'Apple Music', youtube: 'YouTube' }
+const DEFAULT_STATUS = [{ platform: 'applemusic', connected: false }, { platform: 'youtube', connected: false }]
 
 // Pure fetch, no setState -- safe to call from an effect's .then() or a plain
 // event handler alike.
@@ -76,8 +77,25 @@ function Profile() {
     return () => clearTimeout(t)
   }, [justConnected, connectError, setSearchParams])
 
+  /**
+   * Two shapes, because Apple Music genuinely has no redirect flow: MusicKit
+   * prompts on-device and hands back a token, so connecting never leaves the
+   * page. YouTube still does the classic authorize-URL handoff.
+   */
   const handleConnect = async (platform) => {
     setConnectingPlatform(platform)
+    if (platform === 'applemusic') {
+      try {
+        await ensureAppleMusicInitialized()
+        await authorizeAppleMusic()
+        setPlatforms(await loadPlatformStatus())
+      } catch {
+        // Declining the Apple Music prompt is a normal choice, not an error.
+      } finally {
+        setConnectingPlatform(null)
+      }
+      return
+    }
     try {
       const url = await getPlatformAuthorizeUrl(platform)
       window.location.href = url
@@ -219,15 +237,20 @@ function Profile() {
               <h2 className="text-text-primary font-semibold text-sm">Connect Your Music</h2>
             </div>
             <div className="p-4 space-y-2.5">
+              {/* No needsReconnect here, unlike the Spotify button this
+                  replaces: that existed because Spotify only grants scopes
+                  consented to at connect time, so an older connection could be
+                  silently missing playback rights. Apple Music has no scopes to
+                  drift out of date -- a connection either has a valid user
+                  token or it doesn't. */}
               <PlatformButton
-                name="Spotify"
-                platform="spotify"
-                connected={!!byPlatform.spotify?.connected}
-                accountDisplayName={byPlatform.spotify?.accountDisplayName}
-                needsReconnect={!!byPlatform.spotify?.connected && !(byPlatform.spotify?.scope || '').includes('streaming')}
-                connecting={connectingPlatform === 'spotify'}
-                onConnect={() => handleConnect('spotify')}
-                onDisconnect={() => handleDisconnect('spotify')}
+                name="Apple Music"
+                platform="applemusic"
+                connected={!!byPlatform.applemusic?.connected}
+                accountDisplayName={byPlatform.applemusic?.accountDisplayName}
+                connecting={connectingPlatform === 'applemusic'}
+                onConnect={() => handleConnect('applemusic')}
+                onDisconnect={() => handleDisconnect('applemusic')}
               />
               <PlatformButton
                 name="YouTube"
@@ -238,7 +261,6 @@ function Profile() {
                 onConnect={() => handleConnect('youtube')}
                 onDisconnect={() => handleDisconnect('youtube')}
               />
-              <PlatformButton name="Apple Music" platform="apple" comingSoon />
             </div>
           </div>
 
@@ -288,7 +310,7 @@ function Profile() {
           >
             <h2 className="text-xl font-bold text-text-primary mb-2">Delete account?</h2>
             <p className="text-text-secondary text-sm mb-5">
-              This permanently deletes your account, including your stats, trophies, and any connected Spotify/YouTube accounts. This cannot be undone.
+              This permanently deletes your account, including your stats, trophies, and any connected Apple Music/YouTube accounts. This cannot be undone.
             </p>
 
             {deleteError && (

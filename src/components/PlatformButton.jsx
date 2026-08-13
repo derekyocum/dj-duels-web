@@ -1,15 +1,19 @@
 import { SpotifyIcon, YouTubeIcon, AppleMusicIcon } from './PlatformIcons'
 
-const PLATFORM_ICONS = { spotify: SpotifyIcon, youtube: YouTubeIcon, apple: AppleMusicIcon }
+// spotify stays mapped for the same reason PLATFORM_ICON in trackPlatforms.js
+// keeps it -- it can no longer be connected, but nothing should render blank if
+// a legacy status row ever reaches this component.
+const PLATFORM_ICONS = { applemusic: AppleMusicIcon, youtube: YouTubeIcon, spotify: SpotifyIcon }
 
 const PLATFORM_STYLES = {
+  applemusic: { border: 'border-[#FA243C]/30', bg: 'bg-[#FA243C]/15', text: 'text-[#FA243C]', activeBg: 'bg-[#FA243C]/25', iconColor: '#FA243C' },
   spotify: { border: 'border-[#1DB954]/30', bg: 'bg-[#1DB954]/15', text: 'text-[#1DB954]', activeBg: 'bg-[#1DB954]/25', iconColor: '#1DB954' },
   youtube: { border: 'border-[#FF0000]/30', bg: 'bg-[#FF0000]/15', text: 'text-[#FF0000]', activeBg: 'bg-[#FF0000]/25', iconColor: '#FF0000' },
   apple: { border: 'border-neon-blue/30', bg: 'bg-neon-blue/15', text: 'text-neon-blue', activeBg: 'bg-neon-blue/25', iconColor: '#0080ff' },
 }
 
 function PlatformButton({ name, platform, connected, accountDisplayName, needsReconnect, comingSoon, connecting, onConnect, onDisconnect }) {
-  const styles = PLATFORM_STYLES[platform] || PLATFORM_STYLES.spotify
+  const styles = PLATFORM_STYLES[platform] || PLATFORM_STYLES.applemusic
   const Icon = PLATFORM_ICONS[platform]
 
   return (
@@ -26,7 +30,7 @@ function PlatformButton({ name, platform, connected, accountDisplayName, needsRe
         )}
         {connected && needsReconnect && (
           // This connection predates the "streaming" scope (Web Playback SDK) --
-          // Spotify only grants what was consented to, so getting full-track
+          // Spotify only granted what was consented to, so getting full-track
           // playback needs the same authorize flow run again, not a fix on our end.
           <button
             onClick={onConnect}
