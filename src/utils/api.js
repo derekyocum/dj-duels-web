@@ -75,6 +75,80 @@ export async function searchSpotifyTracks(query) {
   return data.map((t) => ({ ...t, source: 'spotify' }))
 }
 
+// --- Apple Music -------------------------------------------------------
+// Apple's catalog needs only the app-level developer token, so search works
+// for someone who has never connected an account -- the same property Spotify
+// nominally had but couldn't deliver, since its per-user side caps an
+// individual developer's app at 5 authenticated listeners.
+
+export async function searchAppleMusicTracks(query) {
+  const response = await fetch(`${API_BASE}/api/tracks/applemusic/search?q=${encodeURIComponent(query)}`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Search failed')
+  return data.map((t) => ({ ...t, source: 'applemusic' }))
+}
+
+export async function fetchAppleMusicTrack(url) {
+  const response = await fetch(`${API_BASE}/api/tracks/applemusic?url=${encodeURIComponent(url)}`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to fetch track')
+  return { ...data, source: 'applemusic' }
+}
+
+// Initializes MusicKit. Safe to expose: it authorizes the APP against the
+// catalog and carries no user identity -- the user-scoped half never comes
+// from the server, MusicKit mints it on the device.
+export async function fetchAppleMusicDeveloperToken() {
+  const response = await fetch(`${API_BASE}/api/platforms/applemusic/developer-token`, {
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to fetch developer token')
+    err.code = data.error
+    throw err
+  }
+  return data.developerToken
+}
+
+// Connecting Apple Music is just handing the server the token MusicKit already
+// gave us -- there's no authorize URL or callback for this platform.
+export async function storeAppleMusicUserToken(musicUserToken) {
+  const response = await fetch(`${API_BASE}/api/platforms/applemusic/user-token`, {
+    method: 'PUT',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ musicUserToken }),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to connect Apple Music')
+    err.code = data.error
+    throw err
+  }
+  return data
+}
+
+// One-way by necessity: Apple's public API has no supported removal and no
+// reliable "is it saved" check, so there is no unlike/status counterpart to
+// pair with this. See AppleMusicLibraryService on the backend.
+export async function addToAppleMusicLibrary(songId) {
+  const response = await fetch(`${API_BASE}/api/platforms/applemusic/library/${encodeURIComponent(songId)}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    const err = new Error(data.error || 'Failed to add to library')
+    err.code = data.error
+    throw err
+  }
+  return data
+}
+
 export async function searchYouTubeVideos(query) {
   const response = await fetch(`${API_BASE}/api/tracks/youtube/search?q=${encodeURIComponent(query)}`, {
     headers: authHeaders(),
