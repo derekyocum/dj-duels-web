@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import DriftingOrbs from '../components/DriftingOrbs'
 import RoundIntro from '../components/RoundIntro'
@@ -13,97 +13,37 @@ import { useAuth } from '../context/AuthContext'
 import { useDuelSocket, useDuelEvents } from '../context/DuelSocketContext'
 import { useAvatars } from '../utils/useAvatars'
 import {
-  ensureSpotifyPlaybackInitialized,
-  getSpotifyPlaybackStatus,
-  subscribeSpotifyPlaybackStatus,
-  playSpotifyTrack,
-  pauseSpotifyPlayback,
-} from '../utils/spotifyWebPlayback'
+  ensureAppleMusicInitialized,
+  getAppleMusicStatus,
+  subscribeAppleMusicStatus,
+  playAppleMusicTrack,
+  pauseAppleMusicPlayback,
+} from '../utils/appleMusicPlayback'
 
-// Module-level singleton: the Spotify iFrame API script should only ever be
-// injected once per page, and every mount (including the key-forced remount
-// for each new track) awaits the SAME promise for the IFrameAPI object --
-// whichever mount asks first triggers the load, everyone else just waits on
-// (or immediately gets, if it already resolved) the same result.
-let spotifyIframeApiPromise = null
-function loadSpotifyIframeApi() {
-  if (spotifyIframeApiPromise) return spotifyIframeApiPromise
-  spotifyIframeApiPromise = new Promise((resolve) => {
-    window.onSpotifyIframeApiReady = (IFrameAPI) => resolve(IFrameAPI)
-    const script = document.createElement('script')
-    script.src = 'https://open.spotify.com/embed/iframe-api/v1'
-    script.async = true
-    document.body.appendChild(script)
-  })
-  return spotifyIframeApiPromise
-}
-
-// There's no documented/reliable autoplay URL param for Spotify's classic
-// embed (unlike YouTube's real autoplay=1) -- the &autoplay=1 the old <iframe
-// src> carried was never guaranteed to do anything, and evidently doesn't in
-// practice. Spotify does ship an official iFrame API for exactly this
-// (developer.spotify.com/documentation/embeds/references/iframe-api): create
-// a controller against a container element, then call .play() once it
-// reports 'ready'. This correctly gets allow="autoplay; ..." delegated to the
-// generated iframe automatically (confirmed via DOM inspection), so a missing
-// permission isn't the issue.
-//
-// The real constraint is browser autoplay-gesture policy, and it varies a lot
-// by browser: our .play() call fires from an async SDK 'ready' callback, not
-// synchronously inside a click handler, which some browsers (Safari in
-// particular -- it requires the play() call to be in the SAME call stack as
-// the originating user gesture, no async gap allowed) will silently refuse
-// regardless of any earlier click on the page. There's no code-level way to
-// force a guarantee here across every browser, so instead of a silently
-// stalled player we detect the stall (no playback_update reporting
-// isPaused:false shortly after calling play()) and surface a one-tap
-// fallback -- worst case this degrades to a single manual tap instead of
-// nothing happening.
-function SpotifyEmbed({ trackId }) {
-  const containerRef = useRef(null)
-  const controllerRef = useRef(null)
-  const isPlayingRef = useRef(false)
-  const [needsTap, setNeedsTap] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    isPlayingRef.current = false
-    loadSpotifyIframeApi().then((IFrameAPI) => {
-      if (cancelled || !containerRef.current) return
-      IFrameAPI.createController(
-        containerRef.current,
-        { uri: `spotify:track:${trackId}`, width: '100%', height: '352' },
-        (EmbedController) => {
-          if (cancelled) return
-          controllerRef.current = EmbedController
-          EmbedController.addListener('playback_update', (e) => {
-            isPlayingRef.current = !e.data.isPaused
-            if (!e.data.isPaused) setNeedsTap(false)
-          })
-          EmbedController.addListener('ready', () => {
-            EmbedController.play()
-            setTimeout(() => {
-              if (!cancelled && !isPlayingRef.current) setNeedsTap(true)
-            }, 1200)
-          })
-        }
-      )
-    })
-    return () => { cancelled = true; controllerRef.current = null }
-  }, [trackId])
-
+/**
+ * Preview fallback for an Apple Music track when MusicKit isn't playing it --
+ * no subscription, or MusicKit unavailable in this browser.
+ *
+ * Far simpler than the Spotify embed this replaces. That one needed a script
+ * injection, a singleton promise, a controller, and a tap-to-play escape hatch,
+ * because Spotify's classic embed had no reliable autoplay parameter and its
+ * iFrame API called .play() from an async callback that Safari refuses. Apple's
+ * embed is a plain iframe with a src, so all of that machinery goes away.
+ *
+ * Deliberately no autoplay attempt: Apple's embed starts on user interaction,
+ * and pretending otherwise is what produced the silently-stalled player and the
+ * "Tap to play" overlay that had to be bolted on afterwards.
+ */
+function AppleMusicEmbed({ songId, storefront = 'us' }) {
   return (
-    <div className="relative">
-      <div ref={containerRef} />
-      {needsTap && (
-        <button
-          onClick={() => { controllerRef.current?.play(); setNeedsTap(false) }}
-          className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 text-white font-semibold text-sm rounded-2xl cursor-pointer"
-        >
-          <span className="text-xl">▶</span> Tap to play
-        </button>
-      )}
-    </div>
+    <iframe
+      title="Apple Music preview"
+      allow="autoplay *; encrypted-media *;"
+      height="175"
+      className="w-full rounded-2xl border-0"
+      sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation"
+      src={`https://embed.music.apple.com/${storefront}/song/${songId}`}
+    />
   )
 }
 
@@ -217,10 +157,10 @@ function Stage() {
   // 'connecting' | 'ready' | 'unavailable' -- the singleton starts a
   // connectivity check on the very first Stage mount of the session and stays
   // that way; every later mount just reads/subscribes to its current status.
-  const [spotifyPlaybackStatus, setSpotifyPlaybackStatus] = useState(getSpotifyPlaybackStatus())
+  const [appleMusicStatus, setAppleMusicStatus] = useState(getAppleMusicStatus())
   useEffect(() => {
-    ensureSpotifyPlaybackInitialized()
-    return subscribeSpotifyPlaybackStatus(setSpotifyPlaybackStatus)
+    ensureAppleMusicInitialized()
+    return subscribeAppleMusicStatus(setAppleMusicStatus)
   }, [])
 
   // If we mounted without state (reconnect / direct URL), wait for the server
@@ -422,27 +362,27 @@ function Stage() {
     return () => clearTimeout(t)
   }, [trackTimeLeft, phase, vote, songStopped, send, duelId, user?.username, currentTrackIndex])
 
-  const isSpotify = current?.track?.source === 'spotify' && !!current?.track?.id
+  const isAppleMusic = current?.track?.source === 'applemusic' && !!current?.track?.id
 
   // Starts the current track once the SDK device is confirmed ready. If the
   // singleton settles into 'ready' mid-track (a race only possible on the
-  // first Spotify track of a session, since every later track already has a
+  // first Apple Music track of a session, since every later track already has a
   // settled status), this fires and the iframe-fallback JSX below unmounts in
   // the same render -- a brief hiccup, not worth extra state to avoid.
   useEffect(() => {
-    if (phase === 'playing' && isSpotify && spotifyPlaybackStatus === 'ready') {
-      playSpotifyTrack(current.track.id)
+    if (phase === 'playing' && isAppleMusic && appleMusicStatus === 'ready') {
+      playAppleMusicTrack(current.track.id)
     }
-  }, [phase, isSpotify, spotifyPlaybackStatus, current?.track?.id])
+  }, [phase, isAppleMusic, appleMusicStatus, current?.track?.id])
 
   // Headless SDK playback doesn't stop on its own the way the iframe does on
   // unmount -- explicitly pause whenever this track's window ends (timeout,
   // skip) or the phase leaves 'playing', so audio doesn't run into the next
   // track or bleed into Champion. Also pause on Stage unmount itself.
   useEffect(() => {
-    if (songStopped || phase !== 'playing') pauseSpotifyPlayback()
+    if (songStopped || phase !== 'playing') pauseAppleMusicPlayback()
   }, [songStopped, phase])
-  useEffect(() => () => pauseSpotifyPlayback(), [])
+  useEffect(() => () => pauseAppleMusicPlayback(), [])
 
   function handleVote(direction) {
     if (vote) return
@@ -614,11 +554,11 @@ function Stage() {
                     allowFullScreen
                   />
                 </div>
-              ) : phase === 'playing' && isSpotify && spotifyPlaybackStatus !== 'ready' ? (
+              ) : phase === 'playing' && isAppleMusic && appleMusicStatus !== 'ready' ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
-                  <SpotifyEmbed key={current.track.id} trackId={current.track.id} />
+                  <AppleMusicEmbed key={current.track.id} songId={current.track.id} />
                 </div>
-              ) : phase === 'playing' && isSpotify ? (
+              ) : phase === 'playing' && isAppleMusic ? (
                 // SDK path: the player is headless, so unlike the iframe embed it
                 // renders NOTHING on its own -- the album art has to come from us
                 // or the screen is just text while a full track plays.
@@ -640,7 +580,7 @@ function Stage() {
               {/* The iframe embed shows its own title/art, so this stays hidden
                   for it -- but the SDK path is headless and has nothing else on
                   screen, so it needs this block same as YouTube does. */}
-              {(!isSpotify || spotifyPlaybackStatus === 'ready') && (
+              {(!isAppleMusic || appleMusicStatus === 'ready') && (
                 <div className="text-center mb-8">
                   <h2 className={`${textClass} font-bold text-2xl md:text-3xl mb-1`}>{current?.track?.name}</h2>
                   <p className="text-text-secondary text-lg">{current?.track?.artist}</p>
