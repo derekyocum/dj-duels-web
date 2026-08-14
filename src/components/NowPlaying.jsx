@@ -3,6 +3,7 @@ import {
   ensureAppleMusicInitialized,
   getAppleMusicStatus,
   subscribeAppleMusicStatus,
+  isAppleMusicAuthorized,
   playAppleMusicTrack,
   pauseAppleMusicPlayback,
   reconcileAppleMusicPlayback,
@@ -42,6 +43,12 @@ function formatTime(ms) {
  */
 function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesRequired, onSkipVote, avatars = {} }) {
   const [appleMusicStatus, setAppleMusicStatus] = useState(getAppleMusicStatus())
+  // 'ready' only means MusicKit has a developer token and is configured -- it
+  // says nothing about THIS listener. Without also checking authorization,
+  // playback was firing for everyone as soon as the SDK loaded, and MusicKit
+  // was silently degrading to its own 30-second preview for anyone who'd never
+  // connected -- indistinguishable from "full playback" without this flag.
+  const [appleMusicAuthorized, setAppleMusicAuthorized] = useState(isAppleMusicAuthorized())
   const [voted, setVoted] = useState(false)
   // 'ok' | 'corrected' | 'paused' | 'idle' -- see
   // reconcileAppleMusicPlayback. Only the last two are worth telling the user about.
@@ -77,7 +84,10 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
 
   useEffect(() => {
     ensureAppleMusicInitialized()
-    return subscribeAppleMusicStatus(setAppleMusicStatus)
+    return subscribeAppleMusicStatus((s) => {
+      setAppleMusicStatus(s)
+      if (s === 'ready') setAppleMusicAuthorized(isAppleMusicAuthorized())
+    })
   }, [])
 
   // Local ticker purely for the progress bar; the authoritative timeline is
@@ -112,21 +122,21 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
 
   // Start Apple Music playback, seeking to wherever the room already is.
   useEffect(() => {
-    if (source !== 'applemusic' || appleMusicStatus !== 'ready' || !track?.id) return
+    if (source !== 'applemusic' || appleMusicStatus !== 'ready' || !appleMusicAuthorized || !track?.id) return
     if (startedTrackRef.current === current.id) return
     startedTrackRef.current = current.id
     playAppleMusicTrack(track.id, Math.max(0, (Date.now() + clockOffset) - startedAt))
     // clockOffset/startedAt are read at start time only -- re-seeking on every
     // tick would fight the player instead of letting it run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, appleMusicStatus, track?.id, current?.id])
+  }, [source, appleMusicStatus, appleMusicAuthorized, track?.id, current?.id])
 
   // Keep this listener on the room's timeline. Playback is started once per
   // track and then left alone, so without this nothing notices a buffer
   // leaving someone seconds behind, a pause from another tab, or
   // another device quietly stealing playback.
   useEffect(() => {
-    if (source !== 'applemusic' || appleMusicStatus !== 'ready' || !track?.id || !startedAt) return
+    if (source !== 'applemusic' || appleMusicStatus !== 'ready' || !appleMusicAuthorized || !track?.id || !startedAt) return
     const id = setInterval(async () => {
       setSyncState(await reconcileAppleMusicPlayback({
         trackId: track.id,
@@ -135,7 +145,7 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
       }))
     }, 5000)
     return () => clearInterval(id)
-  }, [source, appleMusicStatus, track?.id, startedAt, clockOffset, durationMs])
+  }, [source, appleMusicStatus, appleMusicAuthorized, track?.id, startedAt, clockOffset, durationMs])
 
   /**
    * One-way, because Apple's API is one-way: there is no supported endpoint to
@@ -182,7 +192,7 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
 
   const progress = durationMs > 0 ? Math.min(100, (positionMs / durationMs) * 100) : 0
   const isAppleMusic = source === 'applemusic'
-  const appleMusicPlayable = isAppleMusic && appleMusicStatus === 'ready'
+  const appleMusicPlayable = isAppleMusic && appleMusicStatus === 'ready' && appleMusicAuthorized
   // Someone whose audio has drifted off the room -- worth telling them,
   // since everyone else plays on. No 'elsewhere' case: MusicKit plays in
   // this page, so nothing can take playback away the way another Spotify
@@ -207,7 +217,10 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
     setConnecting(true)
     try {
       await authorizeAppleMusic()
-      // Playback picks up on the next effect run now that we're authorized.
+      // Without this, appleMusicPlayable stayed false (it only re-derives on
+      // an 'appleMusicStatus' transition, which authorizing doesn't trigger),
+      // so playback would silently keep serving the preview after connecting.
+      setAppleMusicAuthorized(true)
     } catch {
       // Declining the prompt is a normal choice, not an error to shout about.
     } finally {

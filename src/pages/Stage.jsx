@@ -16,6 +16,7 @@ import {
   ensureAppleMusicInitialized,
   getAppleMusicStatus,
   subscribeAppleMusicStatus,
+  isAppleMusicAuthorized,
   playAppleMusicTrack,
   pauseAppleMusicPlayback,
 } from '../utils/appleMusicPlayback'
@@ -158,9 +159,18 @@ function Stage() {
   // connectivity check on the very first Stage mount of the session and stays
   // that way; every later mount just reads/subscribes to its current status.
   const [appleMusicStatus, setAppleMusicStatus] = useState(getAppleMusicStatus())
+  // 'ready' only means MusicKit has a developer token and is configured -- it
+  // says nothing about THIS listener. Without also checking authorization,
+  // playback was firing for everyone as soon as the SDK loaded, and MusicKit
+  // was silently degrading to its own 30-second preview for anyone who'd never
+  // connected -- indistinguishable from "full playback" without this flag.
+  const [appleMusicAuthorized, setAppleMusicAuthorized] = useState(isAppleMusicAuthorized())
   useEffect(() => {
     ensureAppleMusicInitialized()
-    return subscribeAppleMusicStatus(setAppleMusicStatus)
+    return subscribeAppleMusicStatus((s) => {
+      setAppleMusicStatus(s)
+      if (s === 'ready') setAppleMusicAuthorized(isAppleMusicAuthorized())
+    })
   }, [])
 
   // If we mounted without state (reconnect / direct URL), wait for the server
@@ -363,17 +373,22 @@ function Stage() {
   }, [trackTimeLeft, phase, vote, songStopped, send, duelId, user?.username, currentTrackIndex])
 
   const isAppleMusic = current?.track?.source === 'applemusic' && !!current?.track?.id
+  const appleMusicPlayable = isAppleMusic && appleMusicStatus === 'ready' && appleMusicAuthorized
 
-  // Starts the current track once the SDK device is confirmed ready. If the
-  // singleton settles into 'ready' mid-track (a race only possible on the
-  // first Apple Music track of a session, since every later track already has a
-  // settled status), this fires and the iframe-fallback JSX below unmounts in
-  // the same render -- a brief hiccup, not worth extra state to avoid.
+  // Starts the current track once the SDK device is confirmed ready AND this
+  // listener has actually connected Apple Music (see appleMusicAuthorized
+  // above) -- otherwise MusicKit itself would still "succeed" but only ever
+  // hand back the 30-second preview, indistinguishable from a real full-length
+  // start. If the singleton settles into 'ready' mid-track (a race only
+  // possible on the first Apple Music track of a session, since every later
+  // track already has a settled status), this fires and the iframe-fallback
+  // JSX below unmounts in the same render -- a brief hiccup, not worth extra
+  // state to avoid.
   useEffect(() => {
-    if (phase === 'playing' && isAppleMusic && appleMusicStatus === 'ready') {
+    if (phase === 'playing' && appleMusicPlayable) {
       playAppleMusicTrack(current.track.id)
     }
-  }, [phase, isAppleMusic, appleMusicStatus, current?.track?.id])
+  }, [phase, appleMusicPlayable, current?.track?.id])
 
   // Headless SDK playback doesn't stop on its own the way the iframe does on
   // unmount -- explicitly pause whenever this track's window ends (timeout,
@@ -554,7 +569,7 @@ function Stage() {
                     allowFullScreen
                   />
                 </div>
-              ) : phase === 'playing' && isAppleMusic && appleMusicStatus !== 'ready' ? (
+              ) : phase === 'playing' && isAppleMusic && !appleMusicPlayable ? (
                 <div className={`rounded-2xl overflow-hidden ${glowClass} mx-auto mb-6`}>
                   <AppleMusicEmbed key={current.track.id} songId={current.track.id} />
                 </div>
@@ -580,7 +595,7 @@ function Stage() {
               {/* The iframe embed shows its own title/art, so this stays hidden
                   for it -- but the SDK path is headless and has nothing else on
                   screen, so it needs this block same as YouTube does. */}
-              {(!isAppleMusic || appleMusicStatus === 'ready') && (
+              {(!isAppleMusic || appleMusicPlayable) && (
                 <div className="text-center mb-8">
                   <h2 className={`${textClass} font-bold text-2xl md:text-3xl mb-1`}>{current?.track?.name}</h2>
                   <p className="text-text-secondary text-lg">{current?.track?.artist}</p>
