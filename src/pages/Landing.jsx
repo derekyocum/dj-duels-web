@@ -6,6 +6,7 @@ import CreateDuelModal from '../components/CreateDuelModal'
 import JoinDuelModal from '../components/JoinDuelModal'
 import LoungeModal from '../components/LoungeModal'
 import ModeInfoModal from '../components/ModeInfoModal'
+import ModeMenuButton from '../components/ModeMenuButton'
 import ChampionSpotlight from '../components/ChampionSpotlight'
 import WinnersWall from '../components/WinnersWall'
 import LandingFaq from '../components/LandingFaq'
@@ -76,6 +77,15 @@ function Landing() {
     setShowLoungeModal(true)
   }
 
+  // "Create a Lobby" is one trigger over the same two code-based flows --
+  // CreateDuelModal only creates (no join-by-code), so Duels still need a
+  // separate Join button; LoungeModal already handles both create AND join
+  // in one modal, so Lounge needs nothing else.
+  const handleCreateLobbySelect = (mode) => {
+    if (mode === 'duel') handleCreateClick()
+    else handleLoungeClick()
+  }
+
   return (
     <div className="relative min-h-svh flex flex-col">
       <AppBackground />
@@ -118,46 +128,25 @@ function Landing() {
           Battle 1v1 in a Duel, or just queue up music together in a Lounge — no friends required to start.
         </p>
 
-        {/* Primary row is the matchmaking pair -- finding people and playing
-            together is the headline act now. Create/Join Duel and Host Lounge
-            (code-based, for a crew you already have) move to the smaller row
-            below, same components/behavior as before, just demoted. No
-            explainer text under anything -- what each mode is now lives behind
-            the single info icon below, so a first-time visitor sees actions
-            rather than paragraphs. */}
+        {/* Find Match is the headline act now -- one trigger, a Duel/Lounge
+            dropdown picks the mode. Create a Lobby is the same merge one tier
+            down, for a crew that already has each other. Join a Duel stays
+            its own button since Duels (unlike Lounges) have no combined
+            create-or-join flow to fold it into. No explainer text under
+            anything -- what each mode is now lives behind the single info
+            icon below, so a first-time visitor sees actions rather than
+            paragraphs. */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
-          <button
-            onClick={() => handleFindMatchClick('duel')}
-            className="group relative px-8 py-3.5 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-4px_rgba(0,128,255,0.5)] hover:shadow-[0_0_45px_-2px_rgba(0,128,255,0.7)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-          >
-            Find a Duel
-          </button>
-          <button
-            onClick={() => handleFindMatchClick('lounge')}
-            className="group relative px-8 py-3.5 text-base font-bold rounded-full bg-gradient-to-r from-ember to-neon-orange text-white shadow-[0_0_30px_-4px_rgba(255,157,92,0.5)] hover:shadow-[0_0_45px_-2px_rgba(255,157,92,0.7)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-          >
-            Find a Lounge
-          </button>
+          <ModeMenuButton label="Find Match" variant="primary" onSelect={handleFindMatchClick} />
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-          <button
-            onClick={handleCreateClick}
-            className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-          >
-            Create a Duel
-          </button>
+          <ModeMenuButton label="Create a Lobby" variant="secondary" onSelect={handleCreateLobbySelect} />
           <button
             onClick={handleJoinClick}
             className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
             Join a Duel
-          </button>
-          <button
-            onClick={handleLoungeClick}
-            className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-ember hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-          >
-            Host a Lounge
           </button>
         </div>
 
