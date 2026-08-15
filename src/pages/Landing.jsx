@@ -6,7 +6,7 @@ import CreateDuelModal from '../components/CreateDuelModal'
 import JoinDuelModal from '../components/JoinDuelModal'
 import LoungeModal from '../components/LoungeModal'
 import ModeInfoModal from '../components/ModeInfoModal'
-import ModeMenuButton from '../components/ModeMenuButton'
+import ModeCard from '../components/ModeCard'
 import ChampionSpotlight from '../components/ChampionSpotlight'
 import WinnersWall from '../components/WinnersWall'
 import LandingFaq from '../components/LandingFaq'
@@ -77,15 +77,6 @@ function Landing() {
     setShowLoungeModal(true)
   }
 
-  // "Create a Lobby" is one trigger over the same two code-based flows --
-  // CreateDuelModal only creates (no join-by-code), so Duels still need a
-  // separate Join button; LoungeModal already handles both create AND join
-  // in one modal, so Lounge needs nothing else.
-  const handleCreateLobbySelect = (mode) => {
-    if (mode === 'duel') handleCreateClick()
-    else handleLoungeClick()
-  }
-
   return (
     <div className="relative min-h-svh flex flex-col">
       <AppBackground />
@@ -128,26 +119,31 @@ function Landing() {
           Battle 1v1 in a Duel, or just queue up music together in a Lounge — no friends required to start.
         </p>
 
-        {/* Find Match is the headline act now -- one trigger, a Duel/Lounge
-            dropdown picks the mode. Create a Lobby is the same merge one tier
-            down, for a crew that already has each other. Join a Duel stays
-            its own button since Duels (unlike Lounges) have no combined
-            create-or-join flow to fold it into. No explainer text under
-            anything -- what each mode is now lives behind the single info
-            icon below, so a first-time visitor sees actions rather than
-            paragraphs. */}
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <ModeMenuButton label="Find Match" variant="primary" onSelect={handleFindMatchClick} />
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-          <ModeMenuButton label="Create a Lobby" variant="secondary" onSelect={handleCreateLobbySelect} />
-          <button
-            onClick={handleJoinClick}
-            className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-          >
-            Join a Duel
-          </button>
+        {/* Mode-first instead of entry-method-first: each card explains itself
+            and offers both ways in (matchmaking as the primary button, a
+            code as the quiet fallback for a crew that already has each
+            other), so there's no longer a separate row of buttons split
+            across "find" vs "create/join" the way there used to be. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+          <ModeCard
+            mode="duel"
+            name="Duel"
+            description="1v1 music battles — pick a track, the room votes, the last DJ standing wins."
+            findLabel="Find a Duel"
+            onFind={() => handleFindMatchClick('duel')}
+            codeAction={[
+              { label: 'Create a Duel', onClick: handleCreateClick },
+              { label: 'Join a Duel', onClick: handleJoinClick },
+            ]}
+          />
+          <ModeCard
+            mode="lounge"
+            name="Lounge"
+            description="No rounds, no timer — just one shared queue, playing in sync for as long as you want."
+            findLabel="Find a Lounge"
+            onFind={() => handleFindMatchClick('lounge')}
+            codeAction={handleLoungeClick}
+          />
         </div>
 
         {/* One icon for all three modes -- opens a single color-coded modal
