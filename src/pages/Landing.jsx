@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
-import CreateDuelModal from '../components/CreateDuelModal'
-import JoinDuelModal from '../components/JoinDuelModal'
+import PrivateDuelModal from '../components/PrivateDuelModal'
 import LoungeModal from '../components/LoungeModal'
 import ModeInfoModal from '../components/ModeInfoModal'
 import ModeCard from '../components/ModeCard'
@@ -15,8 +14,7 @@ import { useAuth } from '../context/AuthContext'
 import { fetchChampion, fetchRecentTracks } from '../utils/api'
 
 function Landing() {
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showJoinModal, setShowJoinModal] = useState(false)
+  const [showDuelModal, setShowDuelModal] = useState(false)
   const [showLoungeModal, setShowLoungeModal] = useState(false)
   const [showModeInfo, setShowModeInfo] = useState(false)
   const { isAuthenticated } = useAuth()
@@ -41,21 +39,13 @@ function Landing() {
   // Signed-out users used to be able to pick a player count and see a
   // generated invite link before finally hitting the auth wall at the actual
   // lobby navigation (ProtectedRoute) -- wasted steps, and sharing a link for
-  // a duel they can never join. Gate the modals themselves instead.
-  const handleCreateClick = () => {
+  // a duel they can never join. Gate the modal itself instead.
+  const handlePrivateDuelClick = () => {
     if (!isAuthenticated) {
       navigate('/login')
       return
     }
-    setShowCreateModal(true)
-  }
-
-  const handleJoinClick = () => {
-    if (!isAuthenticated) {
-      navigate('/login')
-      return
-    }
-    setShowJoinModal(true)
+    setShowDuelModal(true)
   }
 
   // Find a Duel / Find a Lounge queue directly into their own mode -- no
@@ -131,10 +121,7 @@ function Landing() {
             description="1v1 music battles — pick a track, the room votes, the last DJ standing wins."
             findLabel="Find a Duel"
             onFind={() => handleFindMatchClick('duel')}
-            codeAction={[
-              { label: 'Create a Duel', onClick: handleCreateClick },
-              { label: 'Join a Duel', onClick: handleJoinClick },
-            ]}
+            codeAction={handlePrivateDuelClick}
           />
           <ModeCard
             mode="lounge"
@@ -185,8 +172,7 @@ function Landing() {
 
       <Footer />
 
-      <CreateDuelModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
-      <JoinDuelModal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)} />
+      <PrivateDuelModal isOpen={showDuelModal} onClose={() => setShowDuelModal(false)} />
       <LoungeModal isOpen={showLoungeModal} onClose={() => setShowLoungeModal(false)} />
       <ModeInfoModal isOpen={showModeInfo} onClose={() => setShowModeInfo(false)} />
     </div>

@@ -1,5 +1,3 @@
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-
 // Line-art replacements for the sword/headphones emoji the first pass used --
 // drawn in the same stroke style as Landing's own info-icon SVG, so they read
 // as part of the app rather than a system emoji font.
@@ -51,54 +49,17 @@ const ACCENT = {
 
 /**
  * One mode, one card: what it is, the matchmaking entry point, and a quiet
- * "Private Lobby" fallback for people bringing their own crew. Replaces the
- * old entry-method-first layout (a Find Match trigger, a Create a Lobby
- * trigger, sitting apart from each other) with a mode-first one -- Duel and
- * Lounge each explain and offer themselves in one place, which is also why
- * the two of these together retire the separate "What's the difference?"
- * modal.
- *
- * `codeAction` is either a single onClick (Lounge: one modal already handles
- * both create and join) or an array of {label, onClick} (Duel: create and
- * join are genuinely separate modals, so this needs a second, tinier choice).
+ * "Private Lobby" fallback for people bringing their own crew (PrivateDuelModal
+ * / LoungeModal -- both now the same one-modal-handles-create-and-join shape,
+ * so codeAction is always a single onClick). Replaces the old
+ * entry-method-first layout (a Find Match trigger, a Create a Lobby trigger,
+ * sitting apart from each other) with a mode-first one -- Duel and Lounge each
+ * explain and offer themselves in one place, which is also why the two of
+ * these together retire the separate "What's the difference?" modal.
  */
 function ModeCard({ mode, name, description, findLabel, onFind, codeLabel = 'Private Lobby', codeAction }) {
   const accent = ACCENT[mode]
   const Icon = ICON[mode]
-
-  const codeControl = Array.isArray(codeAction) ? (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button className="relative text-text-muted hover:text-text-secondary text-xs font-semibold underline decoration-text-muted/30 underline-offset-4 transition-colors cursor-pointer outline-none">
-          {codeLabel}
-        </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="start"
-          sideOffset={8}
-          className="w-44 rounded-xl bg-dark-surface border border-text-muted/15 shadow-xl overflow-hidden z-50 outline-none"
-        >
-          {codeAction.map((opt) => (
-            <DropdownMenu.Item
-              key={opt.label}
-              onSelect={opt.onClick}
-              className={`px-4 py-2.5 text-xs font-semibold ${accent.name} hover:bg-white/5 transition-colors outline-none cursor-pointer`}
-            >
-              {opt.label}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
-  ) : (
-    <button
-      onClick={codeAction}
-      className="relative text-text-muted hover:text-text-secondary text-xs font-semibold underline decoration-text-muted/30 underline-offset-4 transition-colors cursor-pointer"
-    >
-      {codeLabel}
-    </button>
-  )
 
   return (
     <div className={`group relative rounded-2xl border ${accent.border} bg-card/40 overflow-hidden p-6 flex flex-col items-start text-left transition-all duration-300 hover:-translate-y-1`}>
@@ -122,7 +83,12 @@ function ModeCard({ mode, name, description, findLabel, onFind, codeLabel = 'Pri
         {findLabel}
       </button>
 
-      {codeControl}
+      <button
+        onClick={codeAction}
+        className="relative text-text-muted hover:text-text-secondary text-xs font-semibold underline decoration-text-muted/30 underline-offset-4 transition-colors cursor-pointer"
+      >
+        {codeLabel}
+      </button>
     </div>
   )
 }
