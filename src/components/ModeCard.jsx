@@ -51,7 +51,7 @@ const ACCENT = {
 
 /**
  * One mode, one card: what it is, the matchmaking entry point, and a quiet
- * "have a code?" fallback for people bringing their own crew. Replaces the
+ * "Private Lobby" fallback for people bringing their own crew. Replaces the
  * old entry-method-first layout (a Find Match trigger, a Create a Lobby
  * trigger, sitting apart from each other) with a mode-first one -- Duel and
  * Lounge each explain and offer themselves in one place, which is also why
@@ -62,7 +62,7 @@ const ACCENT = {
  * both create and join) or an array of {label, onClick} (Duel: create and
  * join are genuinely separate modals, so this needs a second, tinier choice).
  */
-function ModeCard({ mode, name, description, findLabel, onFind, codeLabel = 'Have a code?', codeAction }) {
+function ModeCard({ mode, name, description, findLabel, onFind, codeLabel = 'Private Lobby', codeAction }) {
   const accent = ACCENT[mode]
   const Icon = ICON[mode]
 
