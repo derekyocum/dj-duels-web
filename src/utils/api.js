@@ -9,18 +9,24 @@ const authHeaders = () => {
   }
 }
 
-// "Find a Match" -- authenticated REST polling, no WebSocket while waiting
-// (see MatchmakingController on the backend for why). Groups are a fixed 4
-// players; once matched, the client joins the normal /lobby/:duelId flow.
-export async function joinMatchmaking() {
-  const response = await fetch(`${API_BASE}/api/matchmaking/join`, { method: 'POST', headers: authHeaders() })
+// "Find a Duel" / "Find a Lounge" -- authenticated REST polling, no WebSocket
+// while waiting (see MatchmakingController on the backend for why). Groups
+// are a fixed 5 players, matched entirely within their own mode's queue; once
+// matched, the client joins the normal /lobby/:duelId or /lounge/:loungeId
+// flow for the returned roomId.
+export async function joinMatchmaking(mode) {
+  const response = await fetch(`${API_BASE}/api/matchmaking/join`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode }),
+  })
   if (!response.ok) throw new Error('Failed to join matchmaking')
 }
 
 export async function matchmakingStatus() {
   const response = await fetch(`${API_BASE}/api/matchmaking/status`, { headers: authHeaders() })
   if (!response.ok) throw new Error('Failed to check matchmaking status')
-  return response.json() // { status: 'waiting'|'matched'|'not_queued', duelId, position }
+  return response.json() // { status: 'waiting'|'matched'|'not_queued', mode, roomId, position }
 }
 
 export async function cancelMatchmaking() {

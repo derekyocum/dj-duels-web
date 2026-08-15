@@ -32,7 +32,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
   const pasteDebounceRef = useRef(null)
 
   // Search mode state
-  const [searchPlatform, setSearchPlatform] = useState('applemusic')
+  const [searchPlatform, setSearchPlatform] = useState('youtube')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -173,7 +173,7 @@ function SongSelection({ opponent, timeLeft, totalTime = 90, roundNum, roundLabe
         <>
           {/* Platform toggle */}
           <div className="w-full flex gap-2 mb-3">
-            {['applemusic', 'youtube'].map((p) => {
+            {['youtube', 'applemusic'].map((p) => {
               const { Icon, color } = PLATFORM_ICON[p]
               const active = searchPlatform === p
               return (

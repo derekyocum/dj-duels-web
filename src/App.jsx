@@ -46,7 +46,7 @@ function App() {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-          <Route path="/matchmaking" element={<ProtectedRoute><Matchmaking /></ProtectedRoute>} />
+          <Route path="/matchmaking/:mode" element={<ProtectedRoute><Matchmaking /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

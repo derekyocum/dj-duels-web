@@ -1,29 +1,26 @@
 import { useEffect } from 'react'
 
-// One entry per mode, color-coded to match its button on the landing page.
+// One entry per mode, color-coded to match its buttons on the landing page.
 // Kept to a single-sentence flow summary each -- this is the whole app's menu
-// explained at a glance, not a manual.
+// explained at a glance, not a manual. Two modes, not three: Find a Duel/Find
+// a Lounge are just the matchmaking entry point into the same two modes below,
+// not separate concepts, so each entry covers both ways in rather than listing
+// matchmaking as its own confusing third item.
 const MODES = [
   {
     title: 'Duels',
     accent: 'neon-blue',
-    body: 'Share a room code, battle 1v1 each round while everyone else votes, and the last DJ standing takes the crown.',
-  },
-  {
-    title: 'Find a Match',
-    accent: 'neon-purple',
-    body: 'Same battle, no code needed — we pair you with three other players and start the moment the room fills.',
+    body: 'Battle 1v1 each round while everyone else votes, and the last DJ standing takes the crown. Find a Duel matches you with 4 people instantly — or share a room code to play with people you already know.',
   },
   {
     title: 'Listening Lounge',
     accent: 'ember',
-    body: 'No battle. Invite friends, build one shared queue, and listen together in sync for as long as you want.',
+    body: 'No battle, no timer, no winner — just one shared queue everyone listens to together. Find a Lounge matches you with new people instantly — or host one and share the code with friends.',
   },
 ]
 
 const ACCENT = {
   'neon-blue': { text: 'text-neon-blue', chip: 'bg-neon-blue/15 border-neon-blue/30' },
-  'neon-purple': { text: 'text-neon-purple', chip: 'bg-neon-purple/15 border-neon-purple/30' },
   ember: { text: 'text-ember', chip: 'bg-ember/15 border-ember/30' },
 }
 

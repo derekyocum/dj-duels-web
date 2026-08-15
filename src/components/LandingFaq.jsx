@@ -18,12 +18,16 @@ const FAQ = [
     a: 'Yes. No accounts to upgrade, nothing to buy.',
   },
   {
+    q: 'Do I need friends to play?',
+    a: 'No. Find a Duel and Find a Lounge match you with other people automatically — no code, no crew required. Bring your own friends too, with a shareable room code either way.',
+  },
+  {
     q: 'How many people can play?',
-    a: 'Two to seven. Anything above two runs as a bracket — you battle 1v1 each round and the winners advance until someone takes the crown.',
+    a: 'Find a Duel and Find a Lounge pair you with 4 other people automatically. Hosting with a code goes up to seven — anything above two runs as a bracket, and you battle 1v1 each round until someone takes the crown.',
   },
   {
     q: 'What\'s the Listening Lounge?',
-    a: 'The opposite of a duel: no rounds, no timer, no winner. You and your friends share a queue and everyone hears the same moment of the same song, for as long as you want. It\'s friends-only.',
+    a: 'No rounds, no timer, no winner — just one shared queue, and everyone hears the same moment of the same song for as long as you want. Find a Lounge matches you with new people; hosting one with a code keeps it friends-only.',
   },
   {
     q: 'Does everyone need the app?',

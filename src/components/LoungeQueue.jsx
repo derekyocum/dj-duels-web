@@ -13,7 +13,7 @@ import { fetchAppleMusicTrack, fetchYouTubeTrack, searchAppleMusicTracks, search
 function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState('search') // 'search' | 'paste'
-  const [platform, setPlatform] = useState('applemusic')
+  const [platform, setPlatform] = useState('youtube')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
@@ -115,7 +115,7 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
           {mode === 'search' ? (
             <>
               <div className="flex gap-2 mb-3">
-                {['applemusic', 'youtube'].map((p) => {
+                {['youtube', 'applemusic'].map((p) => {
                   const { Icon, color } = PLATFORM_ICON[p]
                   const active = platform === p
                   return (

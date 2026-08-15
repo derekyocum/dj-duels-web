@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import AppBackground from '../components/AppBackground'
 import AppNav from '../components/AppNav'
 import Footer from '../components/Footer'
 import { joinMatchmaking, matchmakingStatus, cancelMatchmaking } from '../utils/api'
 
 const POLL_MS = 2000
-// The backend forms groups of exactly 4 -- see MatchmakingService.GROUP_SIZE.
-const GROUP_SIZE = 4
+// The backend forms groups of exactly 5 -- see MatchmakingService.GROUP_SIZE.
+const GROUP_SIZE = 5
+const VALID_MODES = new Set(['duel', 'lounge'])
 
 function Matchmaking() {
   const navigate = useNavigate()
+  const { mode } = useParams()
   const [position, setPosition] = useState(null)
   const [timedOut, setTimedOut] = useState(false)
   const [error, setError] = useState(null)
@@ -24,7 +26,14 @@ function Matchmaking() {
   const activeRef = useRef(true)
   const matchedRef = useRef(false)
 
+  // A bad/missing URL (no picker screen exists to redirect back to) just
+  // bounces home rather than trying to queue for a mode that doesn't exist.
   useEffect(() => {
+    if (!VALID_MODES.has(mode)) navigate('/', { replace: true })
+  }, [mode, navigate])
+
+  useEffect(() => {
+    if (!VALID_MODES.has(mode)) return undefined
     activeRef.current = true
     let pollId = null
 
@@ -35,9 +44,10 @@ function Matchmaking() {
         if (result.status === 'matched') {
           matchedRef.current = true
           clearInterval(pollId)
-          // No capacity in the URL: lobbies are open now, and a matchmade
-          // session auto-starts as soon as all four queued players have joined.
-          navigate(`/lobby/${result.duelId}`, { replace: true })
+          // No capacity in the URL: lobbies/lounges are open now, and a
+          // matchmade duel auto-starts as soon as all five queued players
+          // have joined.
+          navigate(result.mode === 'lounge' ? `/lounge/${result.roomId}` : `/lobby/${result.roomId}`, { replace: true })
         } else if (result.status === 'not_queued') {
           clearInterval(pollId)
           setTimedOut(true)
@@ -49,7 +59,7 @@ function Matchmaking() {
       }
     }
 
-    joinMatchmaking()
+    joinMatchmaking(mode)
       .then(poll)
       .catch(() => { if (activeRef.current) setError('Could not start matchmaking. Please try again.') })
     pollId = setInterval(poll, POLL_MS)
@@ -61,7 +71,7 @@ function Matchmaking() {
       // matched and is navigating to their new lobby.
       if (!matchedRef.current) cancelMatchmaking().catch(() => {})
     }
-  }, [navigate, attempt])
+  }, [navigate, mode, attempt])
 
   const handleCancel = () => {
     matchedRef.current = false // ensure the cleanup effect actually cancels
@@ -120,7 +130,9 @@ function Matchmaking() {
             <div className="relative">
               <span className="text-5xl animate-pulse">🎧</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold text-text-primary">Finding you a match...</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-text-primary">
+              {mode === 'lounge' ? 'Finding you a lounge...' : 'Finding you a duel...'}
+            </h2>
             <p className="text-text-secondary">
               {position ? `${position} of ${GROUP_SIZE} in queue` : 'Connecting...'}
             </p>

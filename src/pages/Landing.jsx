@@ -57,12 +57,15 @@ function Landing() {
     setShowJoinModal(true)
   }
 
-  const handleFindMatchClick = () => {
+  // Find a Duel / Find a Lounge queue directly into their own mode -- no
+  // intermediate picker screen, since the choice is already made by which
+  // button got clicked here.
+  const handleFindMatchClick = (mode) => {
     if (!isAuthenticated) {
       navigate('/login')
       return
     }
-    navigate('/matchmaking')
+    navigate(`/matchmaking/${mode}`)
   }
 
   const handleLoungeClick = () => {
@@ -88,7 +91,7 @@ function Landing() {
         <div className="mb-5">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full glass text-neon-pink">
             <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-glow-pulse" />
-            Battle your friends
+            Find your people
           </span>
         </div>
 
@@ -111,40 +114,50 @@ function Landing() {
         </div>
 
         <p className="text-lg md:text-xl text-text-secondary max-w-xl mb-10 leading-relaxed">
-          Go head-to-head with your friends in 1v1 music battles.
-          Pick your tracks, let the crowd decide, and prove you&apos;ve got the best taste.
+          Get matched with people to play with, or bring your own crew.
+          Battle 1v1 in a Duel, or just queue up music together in a Lounge — no friends required to start.
         </p>
 
-        {/* Two rows, no explainer text under anything -- what each mode is now
-            lives behind the single info icon below, so a first-time visitor
-            sees actions rather than paragraphs. */}
+        {/* Primary row is the matchmaking pair -- finding people and playing
+            together is the headline act now. Create/Join Duel and Host Lounge
+            (code-based, for a crew you already have) move to the smaller row
+            below, same components/behavior as before, just demoted. No
+            explainer text under anything -- what each mode is now lives behind
+            the single info icon below, so a first-time visitor sees actions
+            rather than paragraphs. */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <button
-            onClick={handleCreateClick}
+            onClick={() => handleFindMatchClick('duel')}
             className="group relative px-8 py-3.5 text-base font-bold rounded-full bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_30px_-4px_rgba(0,128,255,0.5)] hover:shadow-[0_0_45px_-2px_rgba(0,128,255,0.7)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
-            Create a Duel
+            Find a Duel
           </button>
           <button
-            onClick={handleJoinClick}
-            className="px-8 py-3.5 text-base font-bold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            onClick={() => handleFindMatchClick('lounge')}
+            className="group relative px-8 py-3.5 text-base font-bold rounded-full bg-gradient-to-r from-ember to-neon-orange text-white shadow-[0_0_30px_-4px_rgba(255,157,92,0.5)] hover:shadow-[0_0_45px_-2px_rgba(255,157,92,0.7)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
-            Join a Duel
+            Find a Lounge
           </button>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           <button
-            onClick={handleFindMatchClick}
-            className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-purple hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            onClick={handleCreateClick}
+            className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
-            Find a Match
+            Create a Duel
+          </button>
+          <button
+            onClick={handleJoinClick}
+            className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-neon-blue hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+          >
+            Join a Duel
           </button>
           <button
             onClick={handleLoungeClick}
             className="px-6 py-2.5 text-sm font-semibold rounded-full glass hover:glass-hover text-ember hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
-            Listening Lounge
+            Host a Lounge
           </button>
         </div>
 
