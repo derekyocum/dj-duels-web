@@ -1,29 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 import { fireTrack } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
-
-// w-40 card. CARD_STRIDE_PX (card + the default gap-5) decides whether the
-// strip is long enough to need looping; CARD_WIDTH_PX alone (no gap) decides
-// how much extra room a short, non-looping strip gets to breathe -- see
-// gapClassName below. Estimates are fine for both: being slightly off just
-// means the loop engages, or the gap tier changes, one card early or late.
-const CARD_WIDTH_PX = 160
-const CARD_STRIDE_PX = CARD_WIDTH_PX + 20 // + gap-5
-
-// How much of the viewport the cards alone (no gaps) would fill. A strip
-// that barely has anything in it gets the most breathing room; one that's
-// already close to overflowing gets the tightest gap, since it's a card or
-// two away from looping anyway. Coverage is length-of-strip proportionate to
-// width-of-page, so this scales with any viewport instead of a fixed count.
-const SPARSE_COVERAGE = 0.35
-const MEDIUM_COVERAGE = 0.65
-
-function gapClassName(coverage) {
-  if (coverage < SPARSE_COVERAGE) return 'gap-14'
-  if (coverage < MEDIUM_COVERAGE) return 'gap-8'
-  return 'gap-5'
-}
 
 /**
  * One card per SONG, not per win.
@@ -102,52 +80,23 @@ function TrackCard({ track, fired, onFire }) {
  * shows what the room liked without publishing anyone's listening habits to
  * the open internet.
  *
- * Only loops when there's actually enough to loop with. A seamless marquee
- * needs the list rendered twice back to back, which means every song is on
- * screen twice -- fine once the wall is long, but with a handful of tracks it
- * just looks like the same albums over and over. Below that threshold the
- * strip sits still and shows each song exactly once, spaced out to use the
- * width it isn't otherwise filling (see gapClassName above) rather than
- * huddling at the marquee's tight default gap. Fired state is keyed by
- * matchId, not position, so lighting one copy lights its twin too.
+ * Always drifts once there are enough songs to make a loop worth watching.
+ * A seamless marquee needs the list rendered twice back to back, so every
+ * song is on screen twice -- one alone would just be the same card passing
+ * itself, which is why that single case sits still and centred instead
+ * (below). Fired state is keyed by matchId, not position, so lighting one
+ * copy lights its twin too.
  */
 function WinnersWall({ tracks }) {
   const [firedIds, setFiredIds] = useState(() => new Set())
-  const viewportRef = useRef(null)
-  const [viewportWidth, setViewportWidth] = useState(0)
 
   // One card per song, so a repeat winner doesn't read as a rendering fault.
   const songs = useMemo(() => dedupeBySong(tracks ?? []), [tracks])
 
-  useEffect(() => {
-    const el = viewportRef.current
-    if (!el) return
-    const measure = () => setViewportWidth(el.clientWidth)
-    measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [songs.length])
-
-  // A single real win is still a real win -- there's no count below which
-  // the wall lies about having nothing to show. What used to be a hide/show
-  // cutoff is now just the sparsest spacing tier (below).
   if (songs.length === 0) return null
 
-  // Duplicating is what makes the loop seamless, so only pay for it (in
-  // visible repetition) once the strip genuinely overflows.
-  const shouldLoop = viewportWidth > 0 && songs.length * CARD_STRIDE_PX > viewportWidth
+  const shouldLoop = songs.length >= 2
   const rendered = shouldLoop ? [...songs, ...songs] : songs
-
-  // Coverage is how much of the viewport the cards alone (no gaps) would
-  // fill -- length-of-strip proportionate to width-of-page. A looping strip
-  // always uses the marquee's own tight gap regardless of coverage (it's
-  // already overflowing on purpose); coverage only decides spacing for the
-  // still, non-looping case, and before the first ResizeObserver tick
-  // (viewportWidth === 0) it reads as 0 -- the sparsest tier -- which is
-  // harmless since layout settles within the same frame.
-  const coverage = viewportWidth > 0 ? (songs.length * CARD_WIDTH_PX) / viewportWidth : 0
-  const gap = shouldLoop ? 'gap-5' : gapClassName(coverage)
 
   const handleFire = async (matchId) => {
     // Optimistic: the count is a vanity number, and waiting on a round trip to
@@ -201,13 +150,12 @@ function WinnersWall({ tracks }) {
           kept low for the same reason. */}
       <div className="relative">
         <div
-          ref={viewportRef}
           className="overflow-x-auto no-scrollbar"
           style={shouldLoop ? { maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' } : undefined}
         >
-          {/* justify-center when it fits: a short, still strip should sit in
-              the middle rather than hug the left edge under the centred label. */}
-          <div className={`flex ${gap} px-6 ${shouldLoop ? 'w-max animate-marquee' : 'justify-center'}`}>
+          {/* justify-center for the single-card case: it should sit in the
+              middle rather than hug the left edge under the centred label. */}
+          <div className={`flex gap-5 px-6 ${shouldLoop ? 'w-max animate-marquee' : 'justify-center'}`}>
             {rendered.map((track, i) => (
               <TrackCard
                 key={`${track.matchId}-${i}`}
