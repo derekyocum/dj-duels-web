@@ -82,6 +82,7 @@ function Lounge() {
   }, [send, loungeId])
 
   const members = state?.members ?? []
+  const disconnectedMembers = new Set(state?.disconnectedMembers ?? [])
 
   // Everyone whose picture could be on screen right now: the roster, plus
   // whoever added the current track or something in the queue -- a queued
@@ -146,7 +147,7 @@ function Lounge() {
                   username={m}
                   avatarId={avatars[m]?.avatarId}
                   avatarColor={avatars[m]?.avatarColor}
-                  present
+                  present={!disconnectedMembers.has(m)}
                   showName
                 />
               </div>

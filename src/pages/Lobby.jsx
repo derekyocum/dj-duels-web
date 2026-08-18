@@ -36,6 +36,9 @@ function Lobby() {
   // defaults so the very first render matches what the server would say.
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [lobbyFull, setLobbyFull] = useState(false)
+  // Usernames the server has marked as socket-dropped (see PresenceDisconnectListener
+  // backend-side) -- an indicator only, they still hold their slot/bracket spot.
+  const [disconnectedPlayers, setDisconnectedPlayers] = useState(() => new Set())
   // How it works lives behind a button now (it used to be an always-on card
   // eating space above the roster), so there's no dismissal to remember.
   const [showHowTo, setShowHowTo] = useState(false)
@@ -56,12 +59,19 @@ function Lobby() {
         // Carries the host's rules so someone joining a lobby that was already
         // configured doesn't sit on stale defaults until the next edit.
         if (event.payload.settings) setSettings(event.payload.settings)
+        setDisconnectedPlayers(new Set(event.payload.disconnectedPlayers ?? []))
         break
       case 'PLAYER_LEFT':
         // Same shape as PLAYER_JOINED, and it also carries the host handoff when
         // the person who left was the host (isHost rides on each PlayerInfo).
         setPlayers(event.payload.players)
         if (event.payload.settings) setSettings(event.payload.settings)
+        setDisconnectedPlayers(new Set(event.payload.disconnectedPlayers ?? []))
+        break
+      // The room's socket-liveness view changed without a roster change --
+      // someone's connection dropped (or came back) mid-lobby.
+      case 'PRESENCE_CHANGED':
+        setDisconnectedPlayers(new Set(event.payload.disconnectedPlayers ?? []))
         break
       case 'SETTINGS_UPDATED':
         setSettings(event.payload.settings)
@@ -284,7 +294,12 @@ function Lobby() {
 
         <div className="flex flex-wrap justify-center gap-4 w-full max-w-2xl mb-10">
           {slots.map((player, i) => (
-            <PlayerSlot key={i} player={player} avatars={avatars} />
+            <PlayerSlot
+              key={i}
+              player={player}
+              avatars={avatars}
+              disconnected={player ? disconnectedPlayers.has(player.name) : false}
+            />
           ))}
         </div>
 

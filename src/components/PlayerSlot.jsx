@@ -7,7 +7,7 @@ const CARD_BORDER = {
   'neon-green': 'border-neon-green/30', 'neon-yellow': 'border-neon-yellow/30',
 }
 
-function PlayerSlot({ player, avatars = {} }) {
+function PlayerSlot({ player, avatars = {}, disconnected = false }) {
   if (!player) {
     return (
       <div className="w-36 bg-card/50 border border-dashed border-text-muted/20 rounded-xl p-5 flex flex-col items-center gap-3 animate-pulse-border">
@@ -22,7 +22,11 @@ function PlayerSlot({ player, avatars = {} }) {
   const cardBorder = CARD_BORDER[player.color] || CARD_BORDER['neon-blue']
 
   return (
-    <div className={`w-36 bg-card border ${cardBorder} rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-300`}>
+    <div
+      className={`w-36 bg-card border ${cardBorder} rounded-xl p-5 flex flex-col items-center gap-3 transition-all duration-300 ${
+        disconnected ? 'opacity-50 grayscale' : ''
+      }`}
+    >
       <Avatar
         username={player.name}
         avatarId={avatars[player.name]?.avatarId}
@@ -31,11 +35,21 @@ function PlayerSlot({ player, avatars = {} }) {
       />
       <div className="flex flex-col items-center gap-1">
         <span className="text-text-primary text-sm font-semibold">{player.name}</span>
-        {player.isHost && (
-          <span className="bg-neon-pink/15 text-neon-pink text-xs font-semibold px-2 py-0.5 rounded-full">
-            Host
-          </span>
-        )}
+        <div className="flex items-center gap-1">
+          {player.isHost && (
+            <span className="bg-neon-pink/15 text-neon-pink text-xs font-semibold px-2 py-0.5 rounded-full">
+              Host
+            </span>
+          )}
+          {/* Indicator only -- a disconnected player keeps their slot/bracket
+              spot (see PresenceDisconnectListener backend-side); this is the
+              only thing that changes for them until they reconnect. */}
+          {disconnected && (
+            <span className="bg-text-muted/15 text-text-muted text-xs font-semibold px-2 py-0.5 rounded-full">
+              Disconnected
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )
