@@ -65,6 +65,7 @@ export async function fetchYouTubeTrack(url) {
     albumArtUrl: data.thumbnailUrl,
     videoId: data.videoId,
     youtubeUrl: data.youtubeUrl,
+    durationMs: data.durationMs,
     source: 'youtube',
   }
 }
@@ -169,6 +170,7 @@ export async function searchYouTubeVideos(query) {
     albumArtUrl: v.thumbnailUrl,
     videoId: v.videoId,
     youtubeUrl: v.youtubeUrl,
+    durationMs: v.durationMs,
     source: 'youtube',
   }))
 }
