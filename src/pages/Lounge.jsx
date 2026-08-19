@@ -116,12 +116,15 @@ function Lounge() {
           filter (same performance rule AppBackground's comments establish). */}
       <DriftingOrbs colors={LOUNGE_ORBS} />
 
-      <AppNav right={
-        <span className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full bg-ember/10 text-ember border border-ember/25">
-          <span className={`inline-block w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-ember' : 'bg-text-muted'}`} />
-          {loungeId}
-        </span>
-      } />
+      <AppNav
+        currentRoom={{ roomType: 'LOUNGE', roomId: loungeId }}
+        right={
+          <span className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full bg-ember/10 text-ember border border-ember/25">
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-ember' : 'bg-text-muted'}`} />
+            {loungeId}
+          </span>
+        }
+      />
 
       <main className="relative z-10 flex-1 flex flex-col items-center px-6 pb-10">
         <div className="w-full max-w-2xl">

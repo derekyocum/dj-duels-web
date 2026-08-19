@@ -215,12 +215,15 @@ function Lobby() {
     <div className="relative min-h-svh flex flex-col bg-gradient-to-b from-[#0a1a2e] via-midnight to-midnight">
       <AppBackground />
 
-      <AppNav right={
-        <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-neon-green' : 'bg-text-muted/40'}`} />
-          <span className="text-text-muted text-xs">{isConnected ? 'Connected' : 'Connecting...'}</span>
-        </div>
-      } />
+      <AppNav
+        currentRoom={{ roomType: 'DUEL', roomId: duelId }}
+        right={
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-neon-green' : 'bg-text-muted/40'}`} />
+            <span className="text-text-muted text-xs">{isConnected ? 'Connected' : 'Connecting...'}</span>
+          </div>
+        }
+      />
 
       <main className="relative z-10 flex-1 flex flex-col items-center px-6 py-8">
         <div className="mb-8 flex flex-col items-center gap-2">

@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../context/AuthContext'
+import FriendsModal from './FriendsModal'
 
 // Hamburger dropdown shown wherever a signed-in user needs quick access to
 // Profile / Friends / Leaderboard / Sign Out -- replaces the profile-pill + separate
@@ -15,9 +17,10 @@ import { useAuth } from '../context/AuthContext'
 // synthetic .click() test. Radix's Content portals to document.body and
 // handles outside-click/Escape/focus itself, sidestepping that whole class
 // of bug.
-function UserMenu() {
+function UserMenu({ currentRoom }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [friendsOpen, setFriendsOpen] = useState(false)
 
   if (!user) return null
 
@@ -27,6 +30,7 @@ function UserMenu() {
   }
 
   return (
+    <>
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
@@ -58,13 +62,11 @@ function UserMenu() {
               Profile
             </Link>
           </DropdownMenu.Item>
-          <DropdownMenu.Item asChild>
-            <Link
-              to="/friends"
-              className="block px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors no-underline outline-none cursor-pointer"
-            >
-              Friends
-            </Link>
+          <DropdownMenu.Item
+            onSelect={() => setFriendsOpen(true)}
+            className="px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors outline-none cursor-pointer"
+          >
+            Friends
           </DropdownMenu.Item>
           <DropdownMenu.Item asChild>
             <Link
@@ -83,6 +85,8 @@ function UserMenu() {
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+    <FriendsModal isOpen={friendsOpen} onClose={() => setFriendsOpen(false)} currentRoom={currentRoom} />
+    </>
   )
 }
 

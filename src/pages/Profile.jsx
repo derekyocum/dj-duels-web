@@ -6,6 +6,7 @@ import PlatformButton from '../components/PlatformButton'
 import AvatarPicker from '../components/AvatarPicker'
 import Avatar from '../components/Avatar'
 import Footer from '../components/Footer'
+import FriendsModal from '../components/FriendsModal'
 import { useAuth } from '../context/AuthContext'
 import { fetchPlatformStatus, getPlatformAuthorizeUrl, disconnectPlatform, fetchMyStats, fetchFriends } from '../utils/api'
 import { ensureAppleMusicInitialized, authorizeAppleMusic } from '../utils/appleMusicPlayback'
@@ -42,8 +43,9 @@ function Profile() {
   const [platforms, setPlatforms] = useState([])
   const [connectingPlatform, setConnectingPlatform] = useState(null)
   const [stats, setStats] = useState(null)
-  // Count only -- the list itself lives on /friends now.
+  // Count only -- the list itself lives in the Friends modal now.
   const [pendingRequests, setPendingRequests] = useState(0)
+  const [friendsOpen, setFriendsOpen] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
@@ -216,12 +218,12 @@ function Profile() {
             </div>
           </div>
 
-          {/* Friends moved to its own page (matching mobile), but the pending
-              count still surfaces here -- otherwise an incoming request has
-              nowhere to announce itself short of opening the page on spec. */}
-          <Link
-            to="/friends"
-            className="mt-8 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-neon-cyan/25 text-neon-cyan text-sm font-semibold hover:bg-neon-cyan/10 transition-colors"
+          {/* Friends opens as a modal, but the pending count still surfaces
+              here -- otherwise an incoming request has nowhere to announce
+              itself short of opening the modal on spec. */}
+          <button
+            onClick={() => setFriendsOpen(true)}
+            className="mt-8 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-neon-cyan/25 text-neon-cyan text-sm font-semibold hover:bg-neon-cyan/10 transition-colors cursor-pointer"
           >
             👥 Friends
             {pendingRequests > 0 && (
@@ -229,7 +231,8 @@ function Profile() {
                 {pendingRequests}
               </span>
             )}
-          </Link>
+          </button>
+          <FriendsModal isOpen={friendsOpen} onClose={() => setFriendsOpen(false)} />
 
           {/* Connect Your Music */}
           <div className="bg-card/60 border border-text-muted/15 rounded-2xl overflow-hidden mt-8">

@@ -306,6 +306,38 @@ export async function removeFriend(username) {
   return data
 }
 
+// Invites are delivery-only, not a new access gate: Duel is already open-join
+// and Lounge already gates on friendship, so a friend can always join once
+// they see the invite. Delivery is polled (fetchInvites), not pushed -- the
+// app has no live per-user channel outside an active room.
+export async function sendLobbyInvite(toUsername, roomType, roomId) {
+  const response = await fetch(`${API_BASE}/api/invites`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ toUsername, roomType, roomId }),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to send invite')
+  return data
+}
+
+export async function fetchInvites() {
+  const response = await fetch(`${API_BASE}/api/invites`, { headers: authHeaders() })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to load invites')
+  return data
+}
+
+export async function dismissInvite(id) {
+  const response = await fetch(`${API_BASE}/api/invites/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to dismiss invite')
+  return data
+}
+
 // Blocking ends any friendship or pending request in the same server-side
 // write, so callers don't need to unfriend first.
 export async function blockUser(username) {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { sendFriendRequest, acceptFriendRequest, removeFriend, unblockUser } from '../utils/api'
+import { sendFriendRequest, acceptFriendRequest, removeFriend, unblockUser, sendLobbyInvite } from '../utils/api'
 import { useAvatars } from '../utils/useAvatars'
 import Avatar from './Avatar'
 import UserActions from './UserActions'
@@ -24,8 +24,23 @@ function Row({ username, avatar, children }) {
  * can move someone between two of them (an accept empties an incoming row AND
  * adds a friend), so a refetch is both simpler and can't drift from what the
  * server actually thinks.
+ *
+ * When currentRoom is supplied (only true when opened from inside a live
+ * Duel/Lounge), each accepted friend also gets an Invite button. outgoingInvites
+ * is cross-checked so a modal reopen shows the already-sent "Invited" state
+ * rather than a local flag that would reset itself.
  */
-function FriendsCard({ friends = [], incoming = [], outgoing = [], blocked = [], loading, onChanged }) {
+function FriendsCard({
+  friends = [],
+  incoming = [],
+  outgoing = [],
+  blocked = [],
+  loading,
+  onChanged,
+  currentRoom = null,
+  outgoingInvites = [],
+  onInviteSent,
+}) {
   const [username, setUsername] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -63,6 +78,14 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], blocked = [],
       await sendFriendRequest(name)
       setUsername('')
     }, `Request sent to ${name}`)
+  }
+
+  const handleInvite = (f) => {
+    if (!currentRoom) return
+    run(async () => {
+      await sendLobbyInvite(f.username, currentRoom.roomType, currentRoom.roomId)
+      await onInviteSent?.()
+    })
   }
 
   return (
@@ -130,18 +153,32 @@ function FriendsCard({ friends = [], incoming = [], outgoing = [], blocked = [],
             No friends yet — add someone by username to start a Listening Lounge together.
           </p>
         ) : (
-          friends.map((f) => (
-            <Row key={f.username} username={f.username} avatar={avatars[f.username]}>
-              <button
-                onClick={() => run(() => removeFriend(f.username))}
-                disabled={busy}
-                className="px-3 py-1.5 text-xs font-medium rounded-full bg-text-muted/15 text-text-muted hover:bg-neon-pink/20 hover:text-neon-pink transition-colors cursor-pointer disabled:opacity-40"
-              >
-                Remove
-              </button>
-              <UserActions username={f.username} context="friends list" onChanged={onChanged} />
-            </Row>
-          ))
+          friends.map((f) => {
+            const alreadyInvited = currentRoom && outgoingInvites.some(
+              (inv) => inv.toUsername === f.username && inv.roomId === currentRoom.roomId
+            )
+            return (
+              <Row key={f.username} username={f.username} avatar={avatars[f.username]}>
+                {currentRoom && (
+                  <button
+                    onClick={() => handleInvite(f)}
+                    disabled={busy || alreadyInvited}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-neon-purple/15 text-neon-purple border border-neon-purple/30 hover:bg-neon-purple/25 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {alreadyInvited ? 'Invited ✓' : 'Invite'}
+                  </button>
+                )}
+                <button
+                  onClick={() => run(() => removeFriend(f.username))}
+                  disabled={busy}
+                  className="px-3 py-1.5 text-xs font-medium rounded-full bg-text-muted/15 text-text-muted hover:bg-neon-pink/20 hover:text-neon-pink transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  Remove
+                </button>
+                <UserActions username={f.username} context="friends list" onChanged={onChanged} />
+              </Row>
+            )
+          })
         )}
       </div>
 

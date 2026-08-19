@@ -15,7 +15,6 @@ import Faceoff from './pages/Faceoff'
 import Stage from './pages/Stage'
 import Champion from './pages/Champion'
 import Profile from './pages/Profile'
-import Friends from './pages/Friends'
 import Leaderboard from './pages/Leaderboard'
 import Matchmaking from './pages/Matchmaking'
 import ForgotPassword from './pages/ForgotPassword'
@@ -44,7 +43,6 @@ function App() {
             <Route path="/lounge/:loungeId" element={<Lounge />} />
           </Route>
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/matchmaking/:mode" element={<ProtectedRoute><Matchmaking /></ProtectedRoute>} />
         </Routes>

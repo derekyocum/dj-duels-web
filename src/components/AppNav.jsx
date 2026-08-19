@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import Logo from './Logo'
 import UserMenu from './UserMenu'
 
-function AppNav({ right }) {
+function AppNav({ right, currentRoom }) {
   const { isAuthenticated } = useAuth()
 
   return (
@@ -14,7 +14,7 @@ function AppNav({ right }) {
       <div className="flex items-center gap-3">
         {right}
         {isAuthenticated ? (
-          <UserMenu />
+          <UserMenu currentRoom={currentRoom} />
         ) : (
           <>
             <Link
