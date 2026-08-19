@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 import FriendsCard from './FriendsCard'
 import { fetchFriends, fetchInvites, dismissInvite } from '../utils/api'
@@ -32,6 +33,15 @@ async function loadInvites() {
  * close, no explicit X). Owns the same fetch/refresh logic the old Friends
  * page had, plus incoming lobby invites: polled on open and every 30s while
  * open, since the app has no live per-user channel to push them.
+ *
+ * Rendered via a portal to document.body -- unlike PrivateDuelModal/LoungeModal
+ * (rendered at the top of a page), this opens from deep inside AppNav's `nav`,
+ * which has its own `relative z-10` stacking context. A `fixed z-50` div left
+ * in place there only wins against siblings *within* that nav context; every
+ * page's `<main>` is a separate `relative z-10` stacking context that comes
+ * later in the DOM and paints on top of it regardless of the modal's z-index.
+ * Portaling escapes that ancestry entirely, the same trick Radix's
+ * DropdownMenu.Portal already relies on (see UserMenu.jsx).
  */
 function FriendsModal({ isOpen, onClose, currentRoom }) {
   const [friends, setFriends] = useState({ friends: [], incoming: [], outgoing: [], blocked: [] })
@@ -93,7 +103,7 @@ function FriendsModal({ isOpen, onClose, currentRoom }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4" onClick={onClose}>
       <div
         className="bg-dark-surface border border-text-muted/15 rounded-2xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto"
@@ -154,7 +164,8 @@ function FriendsModal({ isOpen, onClose, currentRoom }) {
           onInviteSent={refreshInvites}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
