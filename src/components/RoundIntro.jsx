@@ -22,7 +22,7 @@ const DEFAULT_ACCENT = 'text-neon-blue'
  * The server pays for this window out of its own cushion (GameController's
  * STAGE_INTRO_MS), so the card costs nobody any playback time.
  */
-function RoundIntro({ roundLabel, isSuddenDeath, suddenDeathRound, isFinalSuddenDeath, player1, player2, bracket, you }) {
+function RoundIntro({ roundLabel, isSuddenDeath, suddenDeathRound, isFinalSuddenDeath, player1, player2, bracket, you, disconnectedPlayers }) {
   const isFinals = roundLabel === 'Final' && !isSuddenDeath
   const accent = isSuddenDeath ? 'text-blood' : (ACCENT[roundLabel] ?? DEFAULT_ACCENT)
   // Only worth drawing once there's an actual tournament to show. A plain 1v1
@@ -81,7 +81,7 @@ function RoundIntro({ roundLabel, isSuddenDeath, suddenDeathRound, isFinalSudden
           a fresh bracket with each match, so this redraws itself each round. */}
       {showBracket && (
         <div className="w-full max-w-2xl mt-2 animate-intro-rise" style={{ animationDelay: '380ms' }}>
-          <BracketPanel bracket={bracket} you={you} />
+          <BracketPanel bracket={bracket} you={you} disconnectedPlayers={disconnectedPlayers} />
         </div>
       )}
     </div>

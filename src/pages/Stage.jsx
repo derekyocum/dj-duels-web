@@ -88,15 +88,29 @@ function formatDuration(ms) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function AudienceMember({ player, isCurrentPerformer, hasVoted, avatars = {} }) {
+function AudienceMember({ player, isCurrentPerformer, hasVoted, avatars = {}, disconnected = false }) {
   const avatar = avatars[player.name]
 
   return (
-    <div className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${isCurrentPerformer ? 'scale-110' : 'opacity-60'}`}>
+    <div
+      className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${isCurrentPerformer ? 'scale-110' : 'opacity-60'} ${
+        disconnected ? 'grayscale' : ''
+      }`}
+    >
       <div className={`relative rounded-full ${isCurrentPerformer ? 'ring-2 ring-neon-blue/40' : ''}`}>
         <Avatar username={player.name} avatarId={avatar?.avatarId} avatarColor={avatar?.avatarColor} size={40} />
         {hasVoted && (
           <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-neon-green border border-midnight flex items-center justify-center text-[8px] font-bold text-midnight">✓</span>
+        )}
+        {/* Bottom-right so it never collides with the vote checkmark above. */}
+        {disconnected && (
+          <span
+            className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-text-muted/80 border border-midnight flex items-center justify-center text-[7px] text-midnight"
+            title="Disconnected"
+            aria-label="disconnected"
+          >
+            ●
+          </span>
         )}
       </div>
       <span className="text-text-muted text-xs truncate max-w-[60px]">{player.name}</span>
@@ -148,6 +162,12 @@ function Stage() {
   // Set instead of advanceInfo when the match TIED: nobody advanced, so the
   // interstitial announces a tiebreak rather than a winner.
   const [tiebreakInfo, setTiebreakInfo] = useState(null)
+  // Usernames the server has marked as socket-dropped -- indicator only, see
+  // PresenceDisconnectListener backend-side. Seeded from whichever screen
+  // sent us here; kept live by PRESENCE_CHANGED.
+  const [disconnectedPlayers, setDisconnectedPlayers] = useState(
+    () => new Set(location.state?.disconnectedPlayers ?? [])
+  )
 
   const tracks = [
     { track: track1, player: player1, key: 'player1' },
@@ -190,6 +210,7 @@ function Stage() {
     setSyncedState(location.state)
     if (typeof location.state?.currentSongIndex === 'number') setCurrentTrackIndex(location.state.currentSongIndex)
     if (location.state?.songEndsAt) setSongEndsAt(location.state.songEndsAt)
+    if (location.state?.disconnectedPlayers) setDisconnectedPlayers(new Set(location.state.disconnectedPlayers))
   }
 
   const handleGameEvent = useCallback((event) => {
@@ -255,6 +276,7 @@ function Stage() {
               // The 🔥 count both tracks landed on, so the next screen can say
               // exactly why this is happening.
               tiedFire: p.tiedPlayer1Votes?.up,
+              disconnectedPlayers: p.disconnectedPlayers,
             },
           })
         }, 2600)
@@ -266,7 +288,8 @@ function Stage() {
         // bracket), show a brief interstitial, then route everyone to the next
         // match's faceoff. round+1 keeps the URL unique so screens remount fresh.
         const { prevWinnerName, player1: np1, player2: np2, roundLabel: nextLabel,
-                bracket: nextBracket, settings, allPlayers: nextAll, faceoffEndsAt } = event.payload
+                bracket: nextBracket, settings, allPlayers: nextAll, faceoffEndsAt,
+                disconnectedPlayers: nextDisconnected } = event.payload
         const matchWinnerTrack = prevWinnerName === player1?.name ? track1 : track2
         const carried = { ...trackHistory }
         if (prevWinnerName) {
@@ -293,11 +316,15 @@ function Stage() {
               allPlayers: nextAll,
               trackHistory: carried,
               faceoffEndsAt,
+              disconnectedPlayers: nextDisconnected,
             },
           })
         }, 2600)
         break
       }
+      case 'PRESENCE_CHANGED':
+        setDisconnectedPlayers(new Set(event.payload.disconnectedPlayers ?? []))
+        break
       case 'ROUND_COMPLETE': {
         const { winnerName, loserName, winnerVotes, loserVotes, winnerTrophies, bracket: finalBracket } = event.payload
         setPhase('finished')
@@ -521,6 +548,7 @@ function Stage() {
             player2={player2}
             bracket={bracket}
             you={user?.username}
+            disconnectedPlayers={disconnectedPlayers}
           />
         ) : (
           <>
@@ -714,6 +742,7 @@ function Stage() {
               isCurrentPerformer={p.name === current?.player?.name}
               hasVoted={currentSongVotes.voters.includes(p.name)}
               avatars={avatars}
+              disconnected={disconnectedPlayers.has(p.name)}
             />
           ))}
         </div>

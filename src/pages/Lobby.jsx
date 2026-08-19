@@ -92,6 +92,7 @@ function Lobby() {
             player2: p.player2,
             roundLabel: p.roundLabel,
             faceoffEndsAt: p.faceoffEndsAt,
+            disconnectedPlayers: p.disconnectedPlayers,
           },
         })
         break

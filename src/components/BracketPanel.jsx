@@ -9,7 +9,7 @@ function roundName(roundIndex, totalRounds) {
   return `Round of ${2 ** remaining}`
 }
 
-function Slot({ name, winner, you }) {
+function Slot({ name, winner, you, disconnected }) {
   const decided = !!winner
   const isWinner = name && name === winner
   const isYou = name && name === you
@@ -23,19 +23,27 @@ function Slot({ name, winner, you }) {
   const isOut = decided && !!name && !isWinner
   return (
     <div className="flex items-center justify-between gap-1.5">
-      <span className={`truncate ${cls}`}>
+      <span className={`truncate ${cls} ${disconnected ? 'opacity-60' : ''}`}>
         {name || 'TBD'}{isYou && <span className="text-neon-blue font-semibold"> (you)</span>}
       </span>
-      {/* Advanced vs knocked out, called out explicitly -- the strikethrough
-          alone is easy to miss at this size, and on the round intro card
-          people are reading the bracket at a glance. */}
-      {isWinner && <span className="text-neon-green text-[10px] shrink-0" aria-label="advanced">✓</span>}
-      {isOut && <span className="text-neon-pink/70 text-[10px] shrink-0" aria-label="eliminated">✗</span>}
+      <span className="flex items-center gap-1 shrink-0">
+        {/* Orthogonal to advanced/eliminated -- someone can be disconnected
+            AND still waiting on their next match, or disconnected AND already
+            decided (e.g. won, then dropped before the next round starts). */}
+        {disconnected && (
+          <span className="text-text-muted/60 text-[9px]" title="Disconnected" aria-label="disconnected">●</span>
+        )}
+        {/* Advanced vs knocked out, called out explicitly -- the strikethrough
+            alone is easy to miss at this size, and on the round intro card
+            people are reading the bracket at a glance. */}
+        {isWinner && <span className="text-neon-green text-[10px]" aria-label="advanced">✓</span>}
+        {isOut && <span className="text-neon-pink/70 text-[10px]" aria-label="eliminated">✗</span>}
+      </span>
     </div>
   )
 }
 
-function BracketPanel({ bracket, you, className = '' }) {
+function BracketPanel({ bracket, you, disconnectedPlayers, className = '' }) {
   if (!Array.isArray(bracket) || bracket.length === 0) return null
   const total = bracket.length
 
@@ -62,9 +70,9 @@ function BracketPanel({ bracket, you, className = '' }) {
                       : 'border-text-muted/15 bg-card/40'
                   }`}
                 >
-                  <Slot name={m.player1} winner={m.winner} you={you} />
+                  <Slot name={m.player1} winner={m.winner} you={you} disconnected={m.player1 && disconnectedPlayers?.has(m.player1)} />
                   <div className="h-px bg-text-muted/10 my-1" />
-                  <Slot name={m.player2} winner={m.winner} you={you} />
+                  <Slot name={m.player2} winner={m.winner} you={you} disconnected={m.player2 && disconnectedPlayers?.has(m.player2)} />
                 </div>
               )
             })}

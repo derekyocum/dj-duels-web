@@ -74,6 +74,14 @@ function Faceoff() {
   // Set when the server refuses a lock-in (a sudden-death repeat of a track this
   // battler already played), so they know to pick again rather than sit waiting.
   const [lockInError, setLockInError] = useState(null)
+  // Usernames the server has marked as socket-dropped -- indicator only, see
+  // PresenceDisconnectListener backend-side. Seeded from whatever screen sent
+  // us here; kept live by PRESENCE_CHANGED, which we already receive today
+  // (DuelSocketContext subscribes to /topic/lobby/{duelId} for the whole
+  // duel session) even though nothing here previously did anything with it.
+  const [disconnectedPlayers, setDisconnectedPlayers] = useState(
+    () => new Set(location.state?.disconnectedPlayers ?? [])
+  )
 
   // Recalculate from server timestamp every second so all clients stay in lockstep
   useEffect(() => {
@@ -105,6 +113,7 @@ function Faceoff() {
           // snapping back to the normal neon look mid-sudden-death.
           suddenDeathRound: p.suddenDeathRound ?? 0,
           isFinalSuddenDeath,
+          disconnectedPlayers: p.disconnectedPlayers,
         },
       })
     } else if (event.type === 'TRACK_REJECTED') {
@@ -112,6 +121,8 @@ function Faceoff() {
       // played, which would just reproduce the tie the room is trying to break.
       setWaitingForOpponent(false)
       setLockInError(event.payload?.message ?? 'Pick a different track.')
+    } else if (event.type === 'PRESENCE_CHANGED') {
+      setDisconnectedPlayers(new Set(event.payload.disconnectedPlayers ?? []))
     } else if (event.type === 'SESSION_EXPIRED' || event.type === 'SESSION_CLOSED') {
       navigate('/')
     }
@@ -191,7 +202,7 @@ function Faceoff() {
           )}
           {bracket && (
             <div className="w-full max-w-2xl">
-              <BracketPanel bracket={bracket} you={user?.username} />
+              <BracketPanel bracket={bracket} you={user?.username} disconnectedPlayers={disconnectedPlayers} />
             </div>
           )}
           {/* Suppressed in sudden death -- the banner above already says what to
