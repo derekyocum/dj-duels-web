@@ -11,7 +11,11 @@ import { fetchAppleMusicTrack, fetchYouTubeTrack, searchAppleMusicTracks, search
  * lock-in pressure — you're adding to a queue, not committing to a battle.
  */
 function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
-  const [open, setOpen] = useState(false)
+  // Open by default, and stays open after a track is added -- queuing up a
+  // run of songs shouldn't mean reopening the search every single time.
+  // Closing it is now something the user chooses via the Minimize button,
+  // not something that happens to them.
+  const [open, setOpen] = useState(true)
   const [mode, setMode] = useState('search') // 'search' | 'paste'
   const [platform, setPlatform] = useState('youtube')
   const [query, setQuery] = useState('')
@@ -79,7 +83,6 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
     onAdd?.(track)
     setQuery('')
     setResults([])
-    setOpen(false)
   }
 
   return (
@@ -92,7 +95,7 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
           onClick={() => setOpen((v) => !v)}
           className="px-4 py-1.5 text-xs font-semibold rounded-full bg-ember/15 text-ember border border-ember/30 hover:bg-ember/25 transition-colors cursor-pointer"
         >
-          {open ? 'Close' : '+ Add a track'}
+          {open ? 'Minimize' : '+ Add a track'}
         </button>
       </div>
 
