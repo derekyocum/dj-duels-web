@@ -93,9 +93,12 @@ function LoungeQueue({ queue, onAdd, onRemove, avatars = {} }) {
         </h2>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="px-4 py-1.5 text-xs font-semibold rounded-full bg-ember/15 text-ember border border-ember/30 hover:bg-ember/25 transition-colors cursor-pointer"
+          aria-label={open ? 'Minimize' : '+ Add a track'}
+          className={`font-semibold rounded-full bg-ember/15 text-ember border border-ember/30 hover:bg-ember/25 transition-colors cursor-pointer ${
+            open ? 'w-6 h-6 flex items-center justify-center text-sm leading-none' : 'px-4 py-1.5 text-xs'
+          }`}
         >
-          {open ? 'Minimize' : '+ Add a track'}
+          {open ? '−' : '+ Add a track'}
         </button>
       </div>
 
