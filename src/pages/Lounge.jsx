@@ -81,6 +81,14 @@ function Lounge() {
     send('lounge/skip-vote', { loungeId })
   }, [send, loungeId])
 
+  const handleSkipPause = useCallback(() => {
+    send('lounge/skip-pause', { loungeId })
+  }, [send, loungeId])
+
+  const handleSkipProceed = useCallback(() => {
+    send('lounge/skip-proceed', { loungeId })
+  }, [send, loungeId])
+
   const members = state?.members ?? []
   const disconnectedMembers = new Set(state?.disconnectedMembers ?? [])
 
@@ -167,6 +175,10 @@ function Lounge() {
             skipVotes={state?.skipVotes ?? 0}
             skipVotesRequired={state?.skipVotesRequired ?? 1}
             onSkipVote={handleSkipVote}
+            skipPaused={state?.skipPaused ?? false}
+            skipPausedBy={state?.skipPausedBy}
+            onSkipPause={handleSkipPause}
+            onSkipProceed={handleSkipProceed}
             avatars={avatars}
           />
 

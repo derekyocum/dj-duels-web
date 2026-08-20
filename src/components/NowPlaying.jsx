@@ -41,7 +41,10 @@ function formatTime(ms) {
  * sees the art, the title and the progress bar moving with everyone else, and
  * gets told why they can't hear it — rather than the room silently desyncing.
  */
-function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesRequired, onSkipVote, avatars = {} }) {
+function NowPlaying({
+  current, startedAt, clockOffset = 0, skipVotes, skipVotesRequired, onSkipVote,
+  skipPaused = false, skipPausedBy, onSkipPause, onSkipProceed, avatars = {},
+}) {
   const [appleMusicStatus, setAppleMusicStatus] = useState(getAppleMusicStatus())
   // 'ready' only means MusicKit has a developer token and is configured -- it
   // says nothing about THIS listener. Without also checking authorization,
@@ -277,11 +280,18 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
         </div>
 
         <div className="mt-5 flex items-center gap-3">
-          <div className="flex-1 h-1.5 bg-card rounded-full overflow-hidden">
-            <div className="h-full rounded-full bg-ember transition-[width] duration-500 ease-linear" style={{ width: `${progress}%` }} />
-          </div>
+          {/* Paused: a static dashed track instead of a filling bar, so it
+              reads at a glance as "not counting down to a skip" rather than
+              just stalled. */}
+          {skipPaused ? (
+            <div className="flex-1 h-1.5 rounded-full border border-dashed border-ember/40" />
+          ) : (
+            <div className="flex-1 h-1.5 bg-card rounded-full overflow-hidden">
+              <div className="h-full rounded-full bg-ember transition-[width] duration-500 ease-linear" style={{ width: `${progress}%` }} />
+            </div>
+          )}
           <span className="text-text-muted text-xs tabular-nums shrink-0">
-            {formatTime(positionMs)}{durationMs > 0 ? ` / ${formatTime(durationMs)}` : ''}
+            {skipPaused ? 'Paused' : `${formatTime(positionMs)}${durationMs > 0 ? ` / ${formatTime(durationMs)}` : ''}`}
           </span>
         </div>
 
@@ -325,19 +335,48 @@ function NowPlaying({ current, startedAt, clockOffset = 0, skipVotes, skipVotesR
             />
             <span className="text-text-muted text-xs truncate">{current.addedBy}&apos;s pick</span>
           </div>
-          <button
-            onClick={() => { setVoted(true); onSkipVote?.() }}
-            disabled={voted}
-            className="shrink-0 px-4 py-1.5 text-xs font-semibold rounded-full bg-card/80 text-text-secondary border border-text-muted/25 hover:text-ember hover:border-ember/40 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {voted ? `Skip · ${skipVotes}/${skipVotesRequired}` : 'Vote to skip'}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {skipPaused ? (
+              <button
+                onClick={onSkipProceed}
+                className="px-4 py-1.5 text-xs font-semibold rounded-full bg-ember/20 text-ember border border-ember/40 hover:bg-ember/30 transition-colors cursor-pointer"
+              >
+                ▶ Proceed
+              </button>
+            ) : (
+              <>
+                {/* Nothing to pause on a track with no known duration -- it
+                    already has no auto-advance deadline in the first place. */}
+                {durationMs > 0 && (
+                  <button
+                    onClick={onSkipPause}
+                    aria-label="Pause auto-skip"
+                    title="Pause auto-skip"
+                    className="px-2.5 py-1.5 text-xs rounded-full bg-card/80 text-text-secondary border border-text-muted/25 hover:text-ember hover:border-ember/40 transition-colors cursor-pointer"
+                  >
+                    ⏸
+                  </button>
+                )}
+                <button
+                  onClick={() => { setVoted(true); onSkipVote?.() }}
+                  disabled={voted}
+                  className="px-4 py-1.5 text-xs font-semibold rounded-full bg-card/80 text-text-secondary border border-text-muted/25 hover:text-ember hover:border-ember/40 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {voted ? `Skip · ${skipVotes}/${skipVotesRequired}` : 'Vote to skip'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
-        {skipVotes > 0 && skipVotes < skipVotesRequired && (
+        {skipPaused ? (
+          <p className="mt-2 text-right text-text-muted text-[11px]">
+            Auto-skip paused{skipPausedBy ? ` by ${skipPausedBy}` : ''} — rewound or not done yet
+          </p>
+        ) : skipVotes > 0 && skipVotes < skipVotesRequired ? (
           <p className="mt-2 text-right text-text-muted text-[11px]">
             {skipVotesRequired - skipVotes} more to skip
           </p>
-        )}
+        ) : null}
       </div>
     </div>
   )
