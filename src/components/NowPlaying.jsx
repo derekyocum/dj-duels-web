@@ -11,6 +11,7 @@ import {
 } from '../utils/appleMusicPlayback'
 import { addToAppleMusicLibrary } from '../utils/api'
 import LoungeAvatar from './LoungeAvatar'
+import AutoplayHelpTooltip from './AutoplayHelpTooltip'
 
 // Filled vs. outline heart -- drawn rather than an icon-library import, same
 // idiom the app already uses for the landing page's info glyph.
@@ -258,6 +259,7 @@ function NowPlaying({
             <p className="text-ember text-[10px] uppercase tracking-widest font-semibold mb-0.5">Now playing</p>
             <p className="text-text-primary font-semibold truncate">{track?.name}</p>
             <p className="text-text-secondary text-sm truncate">{track?.artist}</p>
+            <AutoplayHelpTooltip />
           </div>
           {/* Add-only, and the control says so. Once added it goes disabled
               rather than becoming an un-add, because Apple offers no removal --

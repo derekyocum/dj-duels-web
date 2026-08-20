@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router'
 import DriftingOrbs from '../components/DriftingOrbs'
+import AutoplayHelpTooltip from '../components/AutoplayHelpTooltip'
 import RoundIntro from '../components/RoundIntro'
 import AppNav from '../components/AppNav'
 import Reconnecting from '../components/Reconnecting'
@@ -627,6 +628,7 @@ function Stage() {
                 <div className="text-center mb-8">
                   <h2 className={`${textClass} font-bold text-2xl md:text-3xl mb-1`}>{current?.track?.name}</h2>
                   <p className="text-text-secondary text-lg">{current?.track?.artist}</p>
+                  <AutoplayHelpTooltip accentClass={textClass} hoverClass={`hover:${textClass}`} className="flex flex-col items-center" />
                   <div className="flex items-center justify-center gap-3 mt-2">
                     {isYouTube ? (
                       // Was a hardcoded "5:00 limit" (the embed's own end=300),
