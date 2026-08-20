@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { generateDuelId } from '../utils/duelUtils'
+import { reserveLoungeCode } from '../utils/api'
 
 /**
  * Start or join a Listening Lounge. Mirrors CreateDuelModal/JoinDuelModal's
@@ -11,11 +11,23 @@ import { generateDuelId } from '../utils/duelUtils'
  */
 function LoungeModal({ isOpen, onClose }) {
   const [code, setCode] = useState('')
+  const [starting, setStarting] = useState(false)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   if (!isOpen) return null
 
-  const start = () => navigate(`/lounge/${generateDuelId()}`)
+  const start = async () => {
+    setStarting(true)
+    setError(null)
+    try {
+      const loungeId = await reserveLoungeCode()
+      navigate(`/lounge/${loungeId}`)
+    } catch (e) {
+      setError(e.message)
+      setStarting(false)
+    }
+  }
 
   const join = (e) => {
     e.preventDefault()
@@ -38,10 +50,12 @@ function LoungeModal({ isOpen, onClose }) {
 
         <button
           onClick={start}
-          className="w-full py-3 text-sm font-bold rounded-full bg-gradient-to-r from-ember to-neon-purple text-white hover:-translate-y-0.5 transition-transform duration-300 cursor-pointer"
+          disabled={starting}
+          className="w-full py-3 text-sm font-bold rounded-full bg-gradient-to-r from-ember to-neon-purple text-white hover:-translate-y-0.5 transition-transform duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
         >
-          Start a lounge
+          {starting ? 'Starting…' : 'Start a lounge'}
         </button>
+        {error && <p className="text-neon-pink text-xs mt-2 text-center">{error}</p>}
 
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-text-muted/15" />

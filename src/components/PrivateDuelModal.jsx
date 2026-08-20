@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { generateDuelId } from '../utils/duelUtils'
+import { reserveDuelCode } from '../utils/api'
 
 /**
  * Create or join a private Duel lobby in one modal. Mirrors LoungeModal's
@@ -16,6 +16,8 @@ import { generateDuelId } from '../utils/duelUtils'
  */
 function PrivateDuelModal({ isOpen, onClose }) {
   const [code, setCode] = useState('')
+  const [starting, setStarting] = useState(false)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   if (!isOpen && code) {
@@ -33,7 +35,17 @@ function PrivateDuelModal({ isOpen, onClose }) {
 
   if (!isOpen) return null
 
-  const start = () => navigate(`/lobby/${generateDuelId()}?host=true`)
+  const start = async () => {
+    setStarting(true)
+    setError(null)
+    try {
+      const duelId = await reserveDuelCode()
+      navigate(`/lobby/${duelId}?host=true`)
+    } catch (e) {
+      setError(e.message)
+      setStarting(false)
+    }
+  }
 
   const join = (e) => {
     e.preventDefault()
@@ -56,10 +68,12 @@ function PrivateDuelModal({ isOpen, onClose }) {
 
         <button
           onClick={start}
-          className="w-full py-3 text-sm font-bold rounded-full bg-neon-blue text-white hover:-translate-y-0.5 transition-transform duration-300 cursor-pointer"
+          disabled={starting}
+          className="w-full py-3 text-sm font-bold rounded-full bg-neon-blue text-white hover:-translate-y-0.5 transition-transform duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
         >
-          Start a duel
+          {starting ? 'Starting…' : 'Start a duel'}
         </button>
+        {error && <p className="text-neon-pink text-xs mt-2 text-center">{error}</p>}
 
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-text-muted/15" />

@@ -34,6 +34,25 @@ export async function cancelMatchmaking() {
   if (!response.ok) throw new Error('Failed to cancel matchmaking')
 }
 
+// Hosting a Duel/Lounge used to mean the client picked a random 6-char code
+// itself and navigated straight there -- two people generating the same code
+// at once would silently merge into one room. These claim a server-verified
+// unique code first (see RoomController), so the client only ever navigates
+// to a code nobody else already has.
+export async function reserveDuelCode() {
+  const response = await fetch(`${API_BASE}/api/duel/new-code`, { method: 'POST', headers: authHeaders() })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to start a duel')
+  return data.duelId
+}
+
+export async function reserveLoungeCode() {
+  const response = await fetch(`${API_BASE}/api/lounge/new-code`, { method: 'POST', headers: authHeaders() })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Failed to start a lounge')
+  return data.loungeId
+}
+
 export async function fetchSpotifyTrack(url) {
   const response = await fetch(`${API_BASE}/api/tracks/spotify?url=${encodeURIComponent(url)}`, {
     headers: authHeaders(),

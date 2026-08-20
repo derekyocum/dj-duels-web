@@ -1,10 +1,3 @@
-const CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-
-export function generateDuelId() {
-  const bytes = crypto.getRandomValues(new Uint8Array(6))
-  return Array.from(bytes, (b) => CHARSET[b % CHARSET.length]).join('')
-}
-
 export const PLAYER_NAMES = [
   'DJ Shadow',
   'MC Thunder',
