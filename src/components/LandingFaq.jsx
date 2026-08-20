@@ -33,6 +33,10 @@ const FAQ = [
     q: 'Does everyone need the app?',
     a: 'No. It runs in a browser on any device. The mobile app is the same rooms and the same duels, just native.',
   },
+  {
+    q: 'What about Spotify, Tidal, or SoundCloud?',
+    a: 'I looked into it! Spotify, Tidal, and SoundCloud all gate public access behind requirements a small-scale app can\'t clear right now — mostly needing an existing user base or business status before they\'ll even let you apply. Apple Music and YouTube don\'t, so those are what DJ Duels runs on today.',
+  },
 ]
 
 function FaqItem({ item, isOpen, onToggle }) {
